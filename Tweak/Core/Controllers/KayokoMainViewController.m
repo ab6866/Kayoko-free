@@ -326,6 +326,11 @@ NS_ASSUME_NONNULL_END
     [[self favoritesListViewController] setShowBoldText:showBoldText];
 }
 
+- (void)setKeepSearchVisible:(BOOL)keepSearchVisible {
+    _keepSearchVisible = keepSearchVisible;
+    [[self searchController] setKeepsSearchBarVisible:keepSearchVisible];
+}
+
 - (void)setClearButtonMode:(KayokoClearButtonMode)clearButtonMode {
     if (clearButtonMode != kKayokoClearButtonModeOff && clearButtonMode != kKayokoClearButtonModeHistoryOnly &&
         clearButtonMode != kKayokoClearButtonModeAlways) {

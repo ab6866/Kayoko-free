@@ -105,4 +105,5 @@ static NSUInteger const kKayokoPreferenceKeyPreviewLineCountDefaultValue = 1;
 static KayokoItemDetailsMode const kKayokoPreferenceKeyItemDetailsModeDefaultValue = kKayokoItemDetailsModeImagesOnly;
 static BOOL const kKayokoPreferenceKeyShowIconAndTimeDefaultValue = NO;
 static BOOL const kKayokoPreferenceKeyShowBoldTextDefaultValue = NO;
+static BOOL const kKayokoPreferenceKeyKeepSearchVisibleDefaultValue = NO;
 static CGFloat const kKayokoPreferenceKeyHeightInPointsDefaultValue = 420;

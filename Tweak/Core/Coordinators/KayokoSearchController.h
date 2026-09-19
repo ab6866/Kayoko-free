@@ -31,6 +31,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 @property(nonatomic, weak, nullable) id<KayokoSearchControllerDelegate> delegate;
 @property(nonatomic, assign) KayokoPanelPresentationMode presentationMode;
+@property(nonatomic, assign) BOOL keepsSearchBarVisible;
 @property(nonatomic, assign, readonly, getter=isSearchActive) BOOL searchActive;
 @property(nonatomic, assign, readonly) CGFloat keyboardBottomInset;
 

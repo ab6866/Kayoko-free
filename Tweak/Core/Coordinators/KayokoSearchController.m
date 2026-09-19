@@ -402,6 +402,11 @@ NS_ASSUME_NONNULL_END
 
 #pragma mark - Layout
 
+- (void)setKeepsSearchBarVisible:(BOOL)keepsSearchBarVisible {
+    _keepsSearchBarVisible = keepsSearchBarVisible;
+    [[self presentationController] setKeepsSearchBarVisible:keepsSearchBarVisible];
+}
+
 - (void)layout {
     [[self presentationController] layout];
 }
@@ -739,7 +744,8 @@ NS_ASSUME_NONNULL_END
 }
 
 - (void)refreshForListViewController:(KayokoHistoryListViewController *)listViewController {
-    [self attachToListViewController:listViewController hidesSearchBar:![self isSearchActive]];
+    [self attachToListViewController:listViewController
+                       hidesSearchBar:![self isSearchActive] && ![self keepsSearchBarVisible]];
     if ([self isSearchActive]) {
         [self reloadTagTokens];
     }

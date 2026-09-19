@@ -52,6 +52,10 @@ static CGFloat const kKayokoTableViewCellTitleIconOpticalOffset = 3.5;
 // above the frame bottom, so the content label is pushed down slightly to land
 // its descenders on the icon's bottom edge.
 static CGFloat const kKayokoTableViewCellContentIconOpticalOffset = -1;
+// The preview should breathe below the title without losing its bottom alignment
+// to the icon column. Five points is enough to separate the two text roles while
+// remaining inside the fixed row heights for one, two, and three preview lines.
+static CGFloat const kKayokoTableViewCellTitleContentSpacing = 5;
 
 // A preview label that draws its text from the TOP of its frame instead of
 // vertically centred.
@@ -372,7 +376,9 @@ static CGFloat const kKayokoTableViewCellContentIconOpticalOffset = -1;
             [[self contentLabel] setTranslatesAutoresizingMaskIntoConstraints:NO];
             CGFloat previewLabelHeight = ceil([[[self contentLabel] font] lineHeight] * lineCount);
             [NSLayoutConstraint activateConstraints:@[
-                [[[self contentLabel] topAnchor] constraintEqualToAnchor:[[self headerLabel] bottomAnchor] constant:2],
+                [[[self contentLabel] topAnchor]
+                    constraintEqualToAnchor:[[self headerLabel] bottomAnchor]
+                               constant:kKayokoTableViewCellTitleContentSpacing],
                 [[[self contentLabel] leadingAnchor] constraintEqualToAnchor:[[self headerLabel] leadingAnchor]],
                 [[[self contentLabel] trailingAnchor] constraintEqualToAnchor:textTrailingAnchor
                                                                      constant:textTrailingConstant],

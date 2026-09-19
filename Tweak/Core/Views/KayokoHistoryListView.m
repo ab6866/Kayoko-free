@@ -156,7 +156,7 @@ NS_ASSUME_NONNULL_END
 
 - (void)adjustTargetContentOffsetForSearchBarSnap:(CGPoint *)targetContentOffset {
     CGFloat searchBarHeight = [self searchBarSnapHeight];
-    if (!targetContentOffset || searchBarHeight <= 0) {
+    if (!targetContentOffset || searchBarHeight <= 0 || [self keepsSearchBarVisible]) {
         return;
     }
 

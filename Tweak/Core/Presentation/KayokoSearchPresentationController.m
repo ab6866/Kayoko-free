@@ -124,6 +124,16 @@ NS_ASSUME_NONNULL_END
 
 #pragma mark - Layout
 
+- (void)setKeepsSearchBarVisible:(BOOL)keepsSearchBarVisible {
+    _keepsSearchBarVisible = keepsSearchBarVisible;
+    [[self historyTableView] setKeepsSearchBarVisible:keepsSearchBarVisible];
+    [[self favoritesTableView] setKeepsSearchBarVisible:keepsSearchBarVisible];
+    if (keepsSearchBarVisible) {
+        [self revealSearchBarInTableView:[self historyTableView] animated:NO];
+        [self revealSearchBarInTableView:[self favoritesTableView] animated:NO];
+    }
+}
+
 - (CGFloat)searchHeaderHeight {
     return kKayokoSearchHeaderHeight;
 }
@@ -255,16 +265,17 @@ NS_ASSUME_NONNULL_END
         return;
     }
 
-    if (hidesSearchBar && ![self isSearchActive]) {
-        [self hideSearchBarInTableView:tableView animated:NO];
-    } else if ([self isSearchActive]) {
+    if ([self keepsSearchBarVisible] || [self isSearchActive]) {
         [self revealSearchBarInTableView:tableView animated:NO];
+    } else if (hidesSearchBar) {
+        [self hideSearchBarInTableView:tableView animated:NO];
     }
 }
 
 - (void)hideSearchBarInTableView:(KayokoHistoryListView *)tableView animated:(BOOL)animated {
     UIView *headerView = [self searchHeaderViewForTableView:tableView];
-    if (!tableView || [tableView tableHeaderView] != headerView || [self isSearchActive]) {
+    if (!tableView || [tableView tableHeaderView] != headerView || [self isSearchActive] ||
+        [self keepsSearchBarVisible]) {
         return;
     }
 

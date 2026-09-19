@@ -787,7 +787,7 @@ NS_ASSUME_NONNULL_END
                      withVelocity:(CGPoint)velocity
               targetContentOffset:(inout CGPoint *)targetContentOffset {
     (void)velocity;
-    if (scrollView != [self tableView] || [self hasActiveSearch]) {
+    if (scrollView != [self tableView] || [self hasActiveSearch] || [[self tableView] keepsSearchBarVisible]) {
         return;
     }
 

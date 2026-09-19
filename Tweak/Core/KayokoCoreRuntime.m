@@ -570,6 +570,12 @@ NS_ASSUME_NONNULL_END
     if ([self.mainViewController showIconAndTime] != self.showIconAndTime) {
         [self.mainViewController setShowIconAndTime:self.showIconAndTime];
     }
+    if ([self.mainViewController showBoldText] != self.showBoldText) {
+        [self.mainViewController setShowBoldText:self.showBoldText];
+    }
+    if ([self.mainViewController keepSearchVisible] != self.keepSearchVisible) {
+        [self.mainViewController setKeepSearchVisible:self.keepSearchVisible];
+    }
     if ([self.mainViewController initialViewMode] != self.initialViewMode) {
         [self.mainViewController setInitialViewMode:self.initialViewMode];
     }
@@ -694,6 +700,8 @@ NS_ASSUME_NONNULL_END
         self.itemDetailsMode = kKayokoPreferenceKeyItemDetailsModeDefaultValue;
     }
     self.showIconAndTime = [[self.preferences objectForKey:kKayokoPreferenceKeyShowIconAndTime] boolValue];
+    self.showBoldText = [[self.preferences objectForKey:kKayokoPreferenceKeyShowBoldText] boolValue];
+    self.keepSearchVisible = [[self.preferences objectForKey:kKayokoPreferenceKeyKeepSearchVisible] boolValue];
     self.heightInPoints = [[self.preferences objectForKey:kKayokoPreferenceKeyHeightInPoints] doubleValue];
 
     KayokoPasteboardManager *pasteboardManager = [KayokoPasteboardManager sharedInstance];
