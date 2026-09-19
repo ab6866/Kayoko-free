@@ -56,6 +56,21 @@ leftover dead code and user-visible strings.
 - Localization files — dropped the "Purchase Kayoko", "Check Product Authorization",
   "Authorization Not Found", Sileo/Zebra instruction and network-failure strings.
 
+### 4. Build fix: CRLF line endings
+
+The tracked `devkit/*.sh` scripts, `Makefile`s, `control`, plists, `.strings` and
+the CI workflow were stored with Windows CRLF line endings. On macOS/Linux bash
+sources `devkit/*.sh`, and the trailing `\r` is then parsed as a command name:
+
+```
+devkit/env.sh: line 2:
+: command not found
+```
+
+which aborts every variant with exit code `127`. All text build inputs are now
+normalized to LF, and a `.gitattributes` (`* text=auto eol=lf`) prevents
+regression on future checkouts.
+
 ## Preview
 
 <img src="Preview.png" alt="Preview" />
