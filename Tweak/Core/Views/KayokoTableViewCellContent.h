@@ -12,6 +12,9 @@ NS_ASSUME_NONNULL_BEGIN
 @property(nonatomic, strong, nullable) UIImage *icon;
 @property(nonatomic, copy) NSString *displayName;
 @property(nonatomic, copy, nullable) NSAttributedString *attributedDisplayName;
+@property(nonatomic, copy, nullable) NSString *applicationName;
+@property(nonatomic, copy, nullable) NSString *categoryName;
+@property(nonatomic, copy, nullable) NSString *noteText;
 @property(nonatomic, copy, nullable) NSString *tagHexColor;
 // The timestamp is split across the row: the time ("19:26") sits directly under
 // the app icon in the left column, and the date ("09-19") sits at the trailing

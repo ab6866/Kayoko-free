@@ -103,7 +103,8 @@ NS_ASSUME_NONNULL_BEGIN
 @property(nonatomic, assign) CGRect noteEditingOriginalPanelFrame;
 @property(nonatomic, assign) NSTimeInterval noteEditingKeyboardAnimationDuration;
 @property(nonatomic, assign) UIViewAnimationOptions noteEditingKeyboardAnimationOptions;
-- (UIMenu *)favoritesButtonMenu;
+- (UIMenu *)countBadgeMenu;
+- (void)updatePreferenceBoolValue:(BOOL)value forKey:(NSString *)key;
 @end
 
 NS_ASSUME_NONNULL_END
@@ -154,11 +155,12 @@ NS_ASSUME_NONNULL_END
         [favoritesButton addTarget:self
                             action:@selector(handleFavoritesButtonPressed)
                   forControlEvents:UIControlEventTouchUpInside];
-        // UIButton menus are shown by a long press when this flag is NO; the
-        // existing touch-up target remains the ordinary history/favorites
-        // switch, so the two gestures do not compete.
-        [favoritesButton setMenu:[self favoritesButtonMenu]];
-        [favoritesButton setShowsMenuAsPrimaryAction:NO];
+        // The star remains a plain TouchUpInside switch. Do not attach a
+        // UIButton menu here: UIKit would make a long press open the menu and
+        // can deliver an extra touch-up after the menu is dismissed.
+        UIButton *countBadgeControl = [[_mainView headerView] countBadgeControl];
+        [countBadgeControl setMenu:[self countBadgeMenu]];
+        [countBadgeControl setShowsMenuAsPrimaryAction:YES];
         [[[_mainView headerView] trailingButton] addTarget:self
                                                     action:@selector(handleClearButtonPressed)
                                           forControlEvents:UIControlEventTouchUpInside];
@@ -333,66 +335,112 @@ NS_ASSUME_NONNULL_END
     _showBoldText = showBoldText;
     [[self historyListViewController] setShowBoldText:showBoldText];
     [[self favoritesListViewController] setShowBoldText:showBoldText];
-    [[[self mainView] headerView] leadingButton].menu = [self favoritesButtonMenu];
+    [[[self mainView] headerView] countBadgeControl].menu = [self countBadgeMenu];
 }
 
 - (void)setKeepSearchVisible:(BOOL)keepSearchVisible {
     _keepSearchVisible = keepSearchVisible;
     [[self searchController] setKeepsSearchBarVisible:keepSearchVisible];
-    [[[self mainView] headerView] leadingButton].menu = [self favoritesButtonMenu];
+    [[[self mainView] headerView] countBadgeControl].menu = [self countBadgeMenu];
 }
 
-- (UIMenu *)favoritesButtonMenu {
-    __weak typeof(self) weakSelf = self;
-    NSBundle *bundle = [KayokoPasteboardManager localizationBundle];
-    NSString *keepTitle = [bundle localizedStringForKey:@"Keep Search Visible"
-                                                   value:@"Keep Search Visible"
-                                                   table:@"Tweak"];
-    NSString *boldTitle = [bundle localizedStringForKey:@"Show Bold Text"
-                                                   value:@"Show Bold Text"
-                                                   table:@"Tweak"];
-    UIAction *keepAction = [UIAction actionWithTitle:keepTitle
-                                                image:[UIImage systemImageNamed:@"pin"]
-                                           identifier:nil
-                                              handler:^(__unused UIAction *action) {
-      __strong typeof(weakSelf) strongSelf = weakSelf;
-      if (!strongSelf) {
-          return;
-      }
-      BOOL value = ![strongSelf keepSearchVisible];
-      [strongSelf setKeepSearchVisible:value];
-      NSUserDefaults *defaults = [[NSUserDefaults alloc] initWithSuiteName:kKayokoPreferencesIdentifier];
-      [defaults setBool:value forKey:kKayokoPreferenceKeyKeepSearchVisible];
-      [defaults synchronize];
-      CFNotificationCenterPostNotification(CFNotificationCenterGetDarwinNotifyCenter(),
-                                            (__bridge CFStringRef)kKayokoNotificationKeyPreferencesReload,
-                                            NULL,
-                                            NULL,
-                                            YES);
-    }];
-    [keepAction setState:[self keepSearchVisible] ? UIMenuElementStateOn : UIMenuElementStateOff];
+- (void)setShowApplication:(BOOL)showApplication {
+    _showApplication = showApplication;
+    [[self historyListViewController] setShowApplication:showApplication];
+    [[self favoritesListViewController] setShowApplication:showApplication];
+    [[[self mainView] headerView] countBadgeControl].menu = [self countBadgeMenu];
+}
 
-    UIAction *boldAction = [UIAction actionWithTitle:boldTitle
+- (void)setShowCategory:(BOOL)showCategory {
+    _showCategory = showCategory;
+    [[self historyListViewController] setShowCategory:showCategory];
+    [[self favoritesListViewController] setShowCategory:showCategory];
+    [[[self mainView] headerView] countBadgeControl].menu = [self countBadgeMenu];
+}
+
+- (void)setShowNote:(BOOL)showNote {
+    _showNote = showNote;
+    [[self historyListViewController] setShowNote:showNote];
+    [[self favoritesListViewController] setShowNote:showNote];
+    [[[self mainView] headerView] countBadgeControl].menu = [self countBadgeMenu];
+}
+
+- (void)updatePreferenceBoolValue:(BOOL)value forKey:(NSString *)key {
+    NSUserDefaults *defaults = [[NSUserDefaults alloc] initWithSuiteName:kKayokoPreferencesIdentifier];
+    [defaults setBool:value forKey:key];
+    [defaults synchronize];
+    CFNotificationCenterPostNotification(CFNotificationCenterGetDarwinNotifyCenter(),
+                                          (__bridge CFStringRef)kKayokoNotificationKeyPreferencesReload,
+                                          NULL,
+                                          NULL,
+                                          YES);
+}
+
+- (UIMenu *)countBadgeMenu {
+    __weak typeof(self) weakSelf = self;
+    // The quick menu is intentionally Chinese regardless of the system
+    // language, matching the requested in-panel settings surface.
+    UIAction *boldAction = [UIAction actionWithTitle:@"字体加粗"
                                                 image:[UIImage systemImageNamed:@"bold"]
                                            identifier:nil
                                               handler:^(__unused UIAction *action) {
       __strong typeof(weakSelf) strongSelf = weakSelf;
-      if (!strongSelf) {
-          return;
-      }
+      if (!strongSelf) return;
       BOOL value = ![strongSelf showBoldText];
       [strongSelf setShowBoldText:value];
-      NSUserDefaults *defaults = [[NSUserDefaults alloc] initWithSuiteName:kKayokoPreferencesIdentifier];
-      [defaults setBool:value forKey:kKayokoPreferenceKeyShowBoldText];
-      [defaults synchronize];
-      CFNotificationCenterPostNotification(CFNotificationCenterGetDarwinNotifyCenter(),
-                                            (__bridge CFStringRef)kKayokoNotificationKeyPreferencesReload,
-                                            NULL,
-                                            NULL,
-                                            YES);
+      [strongSelf updatePreferenceBoolValue:value forKey:kKayokoPreferenceKeyShowBoldText];
     }];
     [boldAction setState:[self showBoldText] ? UIMenuElementStateOn : UIMenuElementStateOff];
-    return [UIMenu menuWithTitle:@"" children:@[keepAction, boldAction]];
+
+    UIAction *keepAction = [UIAction actionWithTitle:@"固定搜索栏"
+                                                image:[UIImage systemImageNamed:@"pin"]
+                                           identifier:nil
+                                              handler:^(__unused UIAction *action) {
+      __strong typeof(weakSelf) strongSelf = weakSelf;
+      if (!strongSelf) return;
+      BOOL value = ![strongSelf keepSearchVisible];
+      [strongSelf setKeepSearchVisible:value];
+      [strongSelf updatePreferenceBoolValue:value forKey:kKayokoPreferenceKeyKeepSearchVisible];
+    }];
+    [keepAction setState:[self keepSearchVisible] ? UIMenuElementStateOn : UIMenuElementStateOff];
+
+    UIAction *applicationAction = [UIAction actionWithTitle:@"应用"
+                                                       image:[UIImage systemImageNamed:@"app"]
+                                                  identifier:nil
+                                                     handler:^(__unused UIAction *action) {
+      __strong typeof(weakSelf) strongSelf = weakSelf;
+      if (!strongSelf) return;
+      BOOL value = ![strongSelf showApplication];
+      [strongSelf setShowApplication:value];
+      [strongSelf updatePreferenceBoolValue:value forKey:kKayokoPreferenceKeyShowApplication];
+    }];
+    [applicationAction setState:[self showApplication] ? UIMenuElementStateOn : UIMenuElementStateOff];
+
+    UIAction *categoryAction = [UIAction actionWithTitle:@"类别"
+                                                    image:[UIImage systemImageNamed:@"tag"]
+                                               identifier:nil
+                                                  handler:^(__unused UIAction *action) {
+      __strong typeof(weakSelf) strongSelf = weakSelf;
+      if (!strongSelf) return;
+      BOOL value = ![strongSelf showCategory];
+      [strongSelf setShowCategory:value];
+      [strongSelf updatePreferenceBoolValue:value forKey:kKayokoPreferenceKeyShowCategory];
+    }];
+    [categoryAction setState:[self showCategory] ? UIMenuElementStateOn : UIMenuElementStateOff];
+
+    UIAction *noteAction = [UIAction actionWithTitle:@"备注"
+                                                image:[UIImage systemImageNamed:@"note.text"]
+                                           identifier:nil
+                                              handler:^(__unused UIAction *action) {
+      __strong typeof(weakSelf) strongSelf = weakSelf;
+      if (!strongSelf) return;
+      BOOL value = ![strongSelf showNote];
+      [strongSelf setShowNote:value];
+      [strongSelf updatePreferenceBoolValue:value forKey:kKayokoPreferenceKeyShowNote];
+    }];
+    [noteAction setState:[self showNote] ? UIMenuElementStateOn : UIMenuElementStateOff];
+
+    return [UIMenu menuWithTitle:@"" children:@[boldAction, keepAction, applicationAction, categoryAction, noteAction]];
 }
 
 - (void)setClearButtonMode:(KayokoClearButtonMode)clearButtonMode {

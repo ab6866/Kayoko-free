@@ -17,6 +17,9 @@ NS_ASSUME_NONNULL_BEGIN
 @property(nonatomic, assign) KayokoItemDetailsMode itemDetailsMode;
 @property(nonatomic, assign) BOOL showIconAndTime;
 @property(nonatomic, assign) BOOL showBoldText;
+@property(nonatomic, assign) BOOL showApplication;
+@property(nonatomic, assign) BOOL showCategory;
+@property(nonatomic, assign) BOOL showNote;
 @property(nonatomic, assign) BOOL keepsSearchBarVisible;
 @property(nonatomic, assign) CGFloat keyboardBottomInset;
 @property(nonatomic, assign) CGFloat searchBarSnapHeight;

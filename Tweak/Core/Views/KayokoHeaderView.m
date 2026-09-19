@@ -25,6 +25,7 @@ static CGFloat const kKayokoHeaderCountBadgeLeadingSpacing = 6;
 @property(nonatomic, strong, readwrite) UIButton *trailingButton;
 @property(nonatomic, strong, readwrite) UIButton *alternateTrailingButton;
 @property(nonatomic, strong, readwrite) KayokoHeaderCountBadgeView *countBadgeView;
+@property(nonatomic, strong, readwrite) UIButton *countBadgeControl;
 
 @end
 
@@ -68,6 +69,17 @@ static CGFloat const kKayokoHeaderCountBadgeLeadingSpacing = 6;
         [self addSubview:_countBadgeView];
         [_countBadgeView setTranslatesAutoresizingMaskIntoConstraints:NO];
 
+        // Keep interaction separate from the render-only badge. This gives the
+        // capsule a reliable tap target without re-enabling interaction on the
+        // badge label or allowing its drawing view to own the menu lifecycle.
+        _countBadgeControl = [[UIButton alloc] init];
+        [_countBadgeControl setBackgroundColor:[UIColor clearColor]];
+        [_countBadgeControl setShowsTouchWhenHighlighted:NO];
+        [_countBadgeControl setAccessibilityTraits:UIAccessibilityTraitButton];
+        [_countBadgeControl setAccessibilityLabel:@"Count settings"];
+        [self addSubview:_countBadgeControl];
+        [_countBadgeControl setTranslatesAutoresizingMaskIntoConstraints:NO];
+
         _trailingButton = [[UIButton alloc] init];
         [self addSubview:_trailingButton];
         [_trailingButton setTranslatesAutoresizingMaskIntoConstraints:NO];
@@ -103,6 +115,10 @@ static CGFloat const kKayokoHeaderCountBadgeLeadingSpacing = 6;
             [[_countBadgeView centerYAnchor] constraintEqualToAnchor:[_titleLabel centerYAnchor]],
             [[_countBadgeView trailingAnchor] constraintLessThanOrEqualToAnchor:[_trailingButton leadingAnchor]
                                                                        constant:-kKayokoTitleTapControlTrailingSpacing],
+            [[_countBadgeControl leadingAnchor] constraintEqualToAnchor:[_countBadgeView leadingAnchor]],
+            [[_countBadgeControl trailingAnchor] constraintEqualToAnchor:[_countBadgeView trailingAnchor]],
+            [[_countBadgeControl topAnchor] constraintEqualToAnchor:[_countBadgeView topAnchor]],
+            [[_countBadgeControl bottomAnchor] constraintEqualToAnchor:[_countBadgeView bottomAnchor]],
             [[_trailingButton centerYAnchor] constraintEqualToAnchor:[_leadingButton centerYAnchor]],
             [[_trailingButton centerXAnchor] constraintEqualToAnchor:[self trailingAnchor]
                                                             constant:-kKayokoTrailingHeaderButtonCenterXInset],

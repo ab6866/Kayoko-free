@@ -77,6 +77,9 @@ static NSString *const kKayokoPreferenceKeyItemDetailsMode = @"ItemDetailsMode";
 static NSString *const kKayokoPreferenceKeyShowIconAndTime = @"ShowIconAndTime";
 static NSString *const kKayokoPreferenceKeyShowBoldText = @"ShowBoldText";
 static NSString *const kKayokoPreferenceKeyKeepSearchVisible = @"KeepSearchVisible";
+static NSString *const kKayokoPreferenceKeyShowApplication = @"ShowApplication";
+static NSString *const kKayokoPreferenceKeyShowCategory = @"ShowCategory";
+static NSString *const kKayokoPreferenceKeyShowNote = @"ShowNote";
 static NSString *const kKayokoPreferenceKeyHeightInPoints = @"HeightInPoints";
 
 static BOOL const kKayokoPreferenceKeyEnabledDefaultValue = YES;
@@ -107,4 +110,8 @@ static KayokoItemDetailsMode const kKayokoPreferenceKeyItemDetailsModeDefaultVal
 static BOOL const kKayokoPreferenceKeyShowIconAndTimeDefaultValue = NO;
 static BOOL const kKayokoPreferenceKeyShowBoldTextDefaultValue = NO;
 static BOOL const kKayokoPreferenceKeyKeepSearchVisibleDefaultValue = NO;
+// Keep existing metadata visible after upgrade; users can opt out independently.
+static BOOL const kKayokoPreferenceKeyShowApplicationDefaultValue = YES;
+static BOOL const kKayokoPreferenceKeyShowCategoryDefaultValue = YES;
+static BOOL const kKayokoPreferenceKeyShowNoteDefaultValue = YES;
 static CGFloat const kKayokoPreferenceKeyHeightInPointsDefaultValue = 420;

@@ -399,6 +399,9 @@ NS_ASSUME_NONNULL_END
         _itemDetailsMode = kKayokoItemDetailsModeImagesOnly;
         _showIconAndTime = kKayokoPreferenceKeyShowIconAndTimeDefaultValue;
         _showBoldText = kKayokoPreferenceKeyShowBoldTextDefaultValue;
+        _showApplication = kKayokoPreferenceKeyShowApplicationDefaultValue;
+        _showCategory = kKayokoPreferenceKeyShowCategoryDefaultValue;
+        _showNote = kKayokoPreferenceKeyShowNoteDefaultValue;
         [self setPreviewLineCount:1];
     }
 
@@ -442,6 +445,24 @@ NS_ASSUME_NONNULL_END
     // height and the reuse identifier (which encodes the weight) both have to be
     // refreshed before the rows are rebuilt.
     [self updateRowHeightForCurrentDisplayOptions];
+    [self reloadData];
+}
+
+- (void)setShowApplication:(BOOL)showApplication {
+    if (_showApplication == showApplication) return;
+    _showApplication = showApplication;
+    [self reloadData];
+}
+
+- (void)setShowCategory:(BOOL)showCategory {
+    if (_showCategory == showCategory) return;
+    _showCategory = showCategory;
+    [self reloadData];
+}
+
+- (void)setShowNote:(BOOL)showNote {
+    if (_showNote == showNote) return;
+    _showNote = showNote;
     [self reloadData];
 }
 

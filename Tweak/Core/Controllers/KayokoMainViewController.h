@@ -33,6 +33,9 @@ NS_ASSUME_NONNULL_BEGIN
 @property(nonatomic, assign) BOOL showIconAndTime;
 @property(nonatomic, assign) BOOL showBoldText;
 @property(nonatomic, assign) BOOL keepSearchVisible;
+@property(nonatomic, assign) BOOL showApplication;
+@property(nonatomic, assign) BOOL showCategory;
+@property(nonatomic, assign) BOOL showNote;
 @property(nonatomic, assign) BOOL shouldPlayFeedback;
 @property(nonatomic, assign, getter=isAuthorizationPassed) BOOL authorizationPassed;
 @property(nonatomic, assign) KayokoPanelPresentationMode presentationMode;

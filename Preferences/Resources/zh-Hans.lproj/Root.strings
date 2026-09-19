@@ -57,6 +57,15 @@
 "Show Time" = "显示时间";
 "Show Bold Text" = "粗体显示";
 "Keep Search Visible" = "固定搜索";
+"Show Application" = "应用";
+"Show Category" = "类别";
+"Show Note" = "备注";
+"Bold Text" = "字体加粗";
+"Keep Search Bar" = "固定搜索栏";
+"Application" = "应用";
+"Category" = "类别";
+"Note" = "备注";
+"Clipboard Item" = "剪贴板条目";
 "Show Kayoko" = "显示 Kayoko";
 "Single Line" = "单行";
 "Swipe to Select Words" = "滑动选词";

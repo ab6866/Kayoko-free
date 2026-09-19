@@ -131,6 +131,30 @@ NS_ASSUME_NONNULL_END
     return [[self tableView] showBoldText];
 }
 
+- (void)setShowApplication:(BOOL)showApplication {
+    [[self tableView] setShowApplication:showApplication];
+}
+
+- (BOOL)showApplication {
+    return [[self tableView] showApplication];
+}
+
+- (void)setShowCategory:(BOOL)showCategory {
+    [[self tableView] setShowCategory:showCategory];
+}
+
+- (BOOL)showCategory {
+    return [[self tableView] showCategory];
+}
+
+- (void)setShowNote:(BOOL)showNote {
+    [[self tableView] setShowNote:showNote];
+}
+
+- (BOOL)showNote {
+    return [[self tableView] showNote];
+}
+
 - (void)refreshSearchPlaceholder {
     BOOL showsNoSearchResults = [self hasActiveSearch] && ![self isBrowsingSearchTokens] && [[self items] count] > 0 &&
                                 [[self displayedItems] count] == 0;
@@ -154,6 +178,9 @@ NS_ASSUME_NONNULL_END
                                                                              itemDetailsMode:[self itemDetailsMode]
                                                                               showIconAndTime:[self showIconAndTime]
                                                                                 showsBoldText:[self showBoldText]
+                                                                              showApplication:[self showApplication]
+                                                                                showCategory:[self showCategory]
+                                                                                    showNote:[self showNote]
                                                                                   searchText:[self searchText]];
         KayokoTableViewCell *cell = (KayokoTableViewCell *)[[self tableView] cellForRowAtIndexPath:indexPath];
         [cell applyDetailContent:content];
@@ -688,6 +715,9 @@ NS_ASSUME_NONNULL_END
                                                                          itemDetailsMode:[self itemDetailsMode]
                                                                           showIconAndTime:[self showIconAndTime]
                                                                             showsBoldText:[self showBoldText]
+                                                                          showApplication:[self showApplication]
+                                                                            showCategory:[self showCategory]
+                                                                                showNote:[self showNote]
                                                                               searchText:[self searchText]];
 
     KayokoTableViewCell *cell =
@@ -727,6 +757,9 @@ NS_ASSUME_NONNULL_END
                                                                          itemDetailsMode:[self itemDetailsMode]
                                                                           showIconAndTime:[self showIconAndTime]
                                                                             showsBoldText:[self showBoldText]
+                                                                          showApplication:[self showApplication]
+                                                                            showCategory:[self showCategory]
+                                                                                showNote:[self showNote]
                                                                               searchText:[self searchText]];
     NSString *reuseIdentifier = [KayokoTableViewCell reuseIdentifierForContent:content];
     KayokoTableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:reuseIdentifier];

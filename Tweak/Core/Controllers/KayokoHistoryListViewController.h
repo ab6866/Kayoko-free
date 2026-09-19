@@ -50,6 +50,9 @@ NS_ASSUME_NONNULL_BEGIN
 @property(nonatomic, assign) KayokoItemDetailsMode itemDetailsMode;
 @property(nonatomic, assign) BOOL showIconAndTime;
 @property(nonatomic, assign) BOOL showBoldText;
+@property(nonatomic, assign) BOOL showApplication;
+@property(nonatomic, assign) BOOL showCategory;
+@property(nonatomic, assign) BOOL showNote;
 
 - (instancetype)initWithName:(NSString *)name historyKey:(NSString *)historyKey NS_DESIGNATED_INITIALIZER;
 - (instancetype)initWithNibName:(nullable NSString *)nibNameOrNil

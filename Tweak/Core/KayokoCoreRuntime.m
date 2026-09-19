@@ -204,6 +204,9 @@ NS_ASSUME_NONNULL_BEGIN
 @property(nonatomic, assign) BOOL showIconAndTime;
 @property(nonatomic, assign) BOOL showBoldText;
 @property(nonatomic, assign) BOOL keepSearchVisible;
+@property(nonatomic, assign) BOOL showApplication;
+@property(nonatomic, assign) BOOL showCategory;
+@property(nonatomic, assign) BOOL showNote;
 @property(nonatomic, assign) CGFloat heightInPoints;
 
 #pragma mark - Feedback
@@ -249,6 +252,10 @@ NS_ASSUME_NONNULL_END
         _itemDetailsMode = kKayokoPreferenceKeyItemDetailsModeDefaultValue;
         _showIconAndTime = kKayokoPreferenceKeyShowIconAndTimeDefaultValue;
         _showBoldText = kKayokoPreferenceKeyShowBoldTextDefaultValue;
+        _keepSearchVisible = kKayokoPreferenceKeyKeepSearchVisibleDefaultValue;
+        _showApplication = kKayokoPreferenceKeyShowApplicationDefaultValue;
+        _showCategory = kKayokoPreferenceKeyShowCategoryDefaultValue;
+        _showNote = kKayokoPreferenceKeyShowNoteDefaultValue;
         _heightInPoints = 420;
         _activePresentationMode = KayokoPanelPresentationModePortraitDrawer;
         _pasteSuppressionState = [[KayokoPasteSuppressionState alloc] init];
@@ -577,6 +584,15 @@ NS_ASSUME_NONNULL_END
     if ([self.mainViewController keepSearchVisible] != self.keepSearchVisible) {
         [self.mainViewController setKeepSearchVisible:self.keepSearchVisible];
     }
+    if ([self.mainViewController showApplication] != self.showApplication) {
+        [self.mainViewController setShowApplication:self.showApplication];
+    }
+    if ([self.mainViewController showCategory] != self.showCategory) {
+        [self.mainViewController setShowCategory:self.showCategory];
+    }
+    if ([self.mainViewController showNote] != self.showNote) {
+        [self.mainViewController setShowNote:self.showNote];
+    }
     if ([self.mainViewController initialViewMode] != self.initialViewMode) {
         [self.mainViewController setInitialViewMode:self.initialViewMode];
     }
@@ -642,6 +658,10 @@ NS_ASSUME_NONNULL_END
         kKayokoPreferenceKeyItemDetailsMode : @(kKayokoPreferenceKeyItemDetailsModeDefaultValue),
         kKayokoPreferenceKeyShowIconAndTime : @(kKayokoPreferenceKeyShowIconAndTimeDefaultValue),
         kKayokoPreferenceKeyShowBoldText : @(kKayokoPreferenceKeyShowBoldTextDefaultValue),
+        kKayokoPreferenceKeyKeepSearchVisible : @(kKayokoPreferenceKeyKeepSearchVisibleDefaultValue),
+        kKayokoPreferenceKeyShowApplication : @(kKayokoPreferenceKeyShowApplicationDefaultValue),
+        kKayokoPreferenceKeyShowCategory : @(kKayokoPreferenceKeyShowCategoryDefaultValue),
+        kKayokoPreferenceKeyShowNote : @(kKayokoPreferenceKeyShowNoteDefaultValue),
         kKayokoPreferenceKeyHeightInPoints : @(kKayokoPreferenceKeyHeightInPointsDefaultValue),
     }];
 
@@ -703,6 +723,9 @@ NS_ASSUME_NONNULL_END
     self.showIconAndTime = [[self.preferences objectForKey:kKayokoPreferenceKeyShowIconAndTime] boolValue];
     self.showBoldText = [[self.preferences objectForKey:kKayokoPreferenceKeyShowBoldText] boolValue];
     self.keepSearchVisible = [[self.preferences objectForKey:kKayokoPreferenceKeyKeepSearchVisible] boolValue];
+    self.showApplication = [[self.preferences objectForKey:kKayokoPreferenceKeyShowApplication] boolValue];
+    self.showCategory = [[self.preferences objectForKey:kKayokoPreferenceKeyShowCategory] boolValue];
+    self.showNote = [[self.preferences objectForKey:kKayokoPreferenceKeyShowNote] boolValue];
     self.heightInPoints = [[self.preferences objectForKey:kKayokoPreferenceKeyHeightInPoints] doubleValue];
 
     KayokoPasteboardManager *pasteboardManager = [KayokoPasteboardManager sharedInstance];
