@@ -132,6 +132,7 @@ NS_ASSUME_NONNULL_END
         [self revealSearchBarInTableView:[self historyTableView] animated:NO];
         [self revealSearchBarInTableView:[self favoritesTableView] animated:NO];
     }
+    [self layout];
 }
 
 - (CGFloat)searchHeaderHeight {
@@ -172,6 +173,15 @@ NS_ASSUME_NONNULL_END
     [tokenView setFrame:tokenFrame];
     if (needsTableHeaderUpdate) {
         [tableView setTableHeaderView:headerView];
+    }
+
+    // Re-installing a tableHeaderView can make UIKit restore the previous
+    // content offset. In pinned-search mode the header is a hard invariant for
+    // both lists, especially Favorites after a reload or list switch.
+    if ([self keepsSearchBarVisible]) {
+        CGPoint contentOffset = [tableView contentOffset];
+        contentOffset.y = 0;
+        [tableView setContentOffset:contentOffset animated:NO];
     }
 }
 
@@ -263,6 +273,14 @@ NS_ASSUME_NONNULL_END
 
     if (!tableView) {
         return;
+    }
+
+    // The active list is not the only list that must stay pinned. The
+    // non-active table is also re-mounted during a switch, so normalize both
+    // offsets before applying the active-list visibility decision.
+    if ([self keepsSearchBarVisible]) {
+        [self revealSearchBarInTableView:[self historyTableView] animated:NO];
+        [self revealSearchBarInTableView:[self favoritesTableView] animated:NO];
     }
 
     if ([self keepsSearchBarVisible] || [self isSearchActive]) {
@@ -654,7 +672,7 @@ NS_ASSUME_NONNULL_END
 #pragma mark - Bottom Insets
 
 - (CGFloat)hiddenSearchBottomInsetForTableView:(KayokoHistoryListView *)tableView {
-    if ([self isSearchActive]) {
+    if ([self isSearchActive] || [self keepsSearchBarVisible]) {
         return 0;
     }
 

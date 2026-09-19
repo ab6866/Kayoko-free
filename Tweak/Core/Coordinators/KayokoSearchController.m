@@ -740,7 +740,14 @@ NS_ASSUME_NONNULL_END
 
 - (void)restoreContentOffset:(CGPoint)contentOffset
        forListViewController:(KayokoHistoryListViewController *)listViewController {
-    [[listViewController tableView] setContentOffset:contentOffset animated:NO];
+    KayokoHistoryListView *tableView = [listViewController tableView];
+    if ([self keepsSearchBarVisible]) {
+        contentOffset.y = 0;
+    }
+    [tableView setContentOffset:contentOffset animated:NO];
+    if ([self keepsSearchBarVisible]) {
+        [[self presentationController] revealSearchBarInTableView:tableView animated:NO];
+    }
 }
 
 - (void)refreshForListViewController:(KayokoHistoryListViewController *)listViewController {
@@ -772,6 +779,10 @@ NS_ASSUME_NONNULL_END
     [self updateTokenListForListViewController:listViewController];
     [self updateSearchTokenHeaderHeights];
     [self restoreContentOffset:currentContentOffset forListViewController:listViewController];
+    if ([self keepsSearchBarVisible]) {
+        [[self presentationController] revealSearchBarInTableView:[[self historyListViewController] tableView] animated:NO];
+        [[self presentationController] revealSearchBarInTableView:[[self favoritesListViewController] tableView] animated:NO];
+    }
     if ([self isSearchActive] && listViewController == [self activeListViewController]) {
         [[self historySearchBar] setShowsCancelButton:NO animated:NO];
         [[self favoritesSearchBar] setShowsCancelButton:NO animated:NO];

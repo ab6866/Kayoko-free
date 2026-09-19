@@ -246,7 +246,7 @@ static CGFloat const kKayokoTableViewCellTitleContentSpacing = 5;
 
             [self setTimestampDateLabel:[[UILabel alloc] init]];
             [[self timestampDateLabel] setFont:[UIFont systemFontOfSize:kKayokoTableViewCellTimestampFontSize
-                                                                 weight:UIFontWeightRegular]];
+                                                                 weight:timestampWeight]];
             [[self timestampDateLabel] setTextColor:timestampColor];
             [[self timestampDateLabel] setTextAlignment:NSTextAlignmentRight];
             [[self timestampDateLabel] setLineBreakMode:NSLineBreakByTruncatingHead];
@@ -388,7 +388,8 @@ static CGFloat const kKayokoTableViewCellTitleContentSpacing = 5;
 
         if (showsDetail) {
             [self setDetailLabel:[[UILabel alloc] init]];
-            [[self detailLabel] setFont:[UIFont systemFontOfSize:12 weight:UIFontWeightRegular]];
+            [[self detailLabel] setFont:[UIFont systemFontOfSize:12
+                                                          weight:showsBoldText ? UIFontWeightMedium : UIFontWeightRegular]];
             [[self detailLabel] setTextColor:[UIColor secondaryLabelColor]];
             [[self detailLabel] setLineBreakMode:NSLineBreakByTruncatingTail];
             [self addSubview:[self detailLabel]];
@@ -466,38 +467,40 @@ static CGFloat const kKayokoTableViewCellTitleContentSpacing = 5;
             [iconColumnBottomAnchor constraintLessThanOrEqualToAnchor:[self bottomAnchor] constant:-6]
         ]];
 
-        // Title top-aligned to the icon's top edge, content bottom-aligned to the
-        // icon's bottom edge.
-        //
-        // Both are equalities at default-high priority so the icon column's own
-        // centring (required) still wins when the row is shorter than the text
-        // needs -- the text may then overflow slightly rather than the icon being
-        // shoved out of the cell. The >= / <= pairs below are the hard bounds
-        // that keep the text inside the cell in every case.
+        // The title and preview/detail are one text block. Centre that whole
+        // block on the midpoint of the icon + time group, rather than aligning
+        // the preview to the icon's bottom edge. This keeps long previews and
+        // detail text visually balanced against the left column.
         NSLayoutYAxisAnchor *textBottomAnchor =
             showsDetail ? [[self detailLabel] bottomAnchor]
                         : (hasContentText ? [[self contentLabel] bottomAnchor] : [[self headerLabel] bottomAnchor]);
+        UILayoutGuide *textColumnGuide = [[UILayoutGuide alloc] init];
+        [self addLayoutGuide:textColumnGuide];
+        [NSLayoutConstraint activateConstraints:@[
+            [[textColumnGuide topAnchor] constraintEqualToAnchor:[[self headerLabel] topAnchor]],
+            [[textColumnGuide bottomAnchor] constraintEqualToAnchor:textBottomAnchor],
+            [[textColumnGuide centerYAnchor] constraintEqualToAnchor:[iconColumnGuide centerYAnchor]]
+        ]];
+
+        // Keep the old optical alignment as a soft fallback for very short or
+        // temporarily incomplete cells. The guide above is the source of truth
+        // and wins whenever the complete text block is present.
         NSMutableArray<NSLayoutConstraint *> *iconAlignedConstraints = [NSMutableArray array];
-        // The title's cap-height sits a touch below the label's frame top, so a
-        // bare equality reads as "title slightly low". Lifting by the difference
-        // between the 40pt icon and the 16pt title's line box makes the optical
-        // tops coincide.
         NSLayoutConstraint *titleTopConstraint =
             [[[self headerLabel] topAnchor] constraintEqualToAnchor:[[self iconImageView] topAnchor]
                                                            constant:-kKayokoTableViewCellTitleIconOpticalOffset];
-        [titleTopConstraint setPriority:UILayoutPriorityDefaultHigh];
+        [titleTopConstraint setPriority:UILayoutPriorityDefaultLow];
         [iconAlignedConstraints addObject:titleTopConstraint];
         if (textBottomAnchor != [[self headerLabel] bottomAnchor]) {
             NSLayoutConstraint *contentBottomConstraint =
                 [textBottomAnchor constraintEqualToAnchor:[[self iconImageView] bottomAnchor]
                                                  constant:kKayokoTableViewCellContentIconOpticalOffset];
-            [contentBottomConstraint setPriority:UILayoutPriorityDefaultHigh];
+            [contentBottomConstraint setPriority:UILayoutPriorityDefaultLow];
             [iconAlignedConstraints addObject:contentBottomConstraint];
         }
         [NSLayoutConstraint activateConstraints:iconAlignedConstraints];
 
-        // Hard bounds: the text block may never leave the cell, whatever the
-        // icon alignment above wants to do.
+        // Hard bounds: the text block may never leave the cell.
         [NSLayoutConstraint activateConstraints:@[
             [[[self headerLabel] topAnchor] constraintGreaterThanOrEqualToAnchor:[self topAnchor] constant:6],
             [textBottomAnchor constraintLessThanOrEqualToAnchor:[self bottomAnchor] constant:-6]

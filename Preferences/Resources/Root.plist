@@ -19,7 +19,7 @@
 			<key>headerSubtitle</key>
 			<string>Feature-rich clipboard manager for iOS.</string>
 			<key>detail</key>
-			<string>v4.3.2</string>
+			<string>v4.3.3+free9</string>
 			<key>height</key>
 			<integer>92</integer>
 		</dict>
@@ -173,6 +173,20 @@
 			<string>ShowBoldText</string>
 			<key>label</key>
 			<string>Show Bold Text</string>
+			<key>PostNotification</key>
+			<string>com.82flex.kayoko.preferences.reload</string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSSwitchCell</string>
+			<key>default</key>
+			<false/>
+			<key>defaults</key>
+			<string>com.82flex.kayoko.preferences</string>
+			<key>key</key>
+			<string>KeepSearchVisible</string>
+			<key>label</key>
+			<string>Keep Search Visible</string>
 			<key>PostNotification</key>
 			<string>com.82flex.kayoko.preferences.reload</string>
 		</dict>
@@ -509,20 +523,6 @@
 			<true/>
 			<key>includeIdentifiersInSearch</key>
 			<true/>
-			<key>PostNotification</key>
-			<string>com.82flex.kayoko.preferences.reload</string>
-		</dict>
-		<dict>
-			<key>cell</key>
-			<string>PSSwitchCell</string>
-			<key>default</key>
-			<false/>
-			<key>defaults</key>
-			<string>com.82flex.kayoko.preferences</string>
-			<key>key</key>
-			<string>KeepSearchVisible</string>
-			<key>label</key>
-			<string>Keep Search Visible</string>
 			<key>PostNotification</key>
 			<string>com.82flex.kayoko.preferences.reload</string>
 		</dict>

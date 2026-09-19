@@ -295,6 +295,12 @@ NS_ASSUME_NONNULL_END
     }
 
     [UIView performWithoutAnimation:^{
+      if ([self keepsSearchBarVisible]) {
+          CGPoint contentOffset = [self contentOffset];
+          contentOffset.y = 0;
+          [self setContentOffset:contentOffset animated:NO];
+          return;
+      }
       UIEdgeInsets contentInset = [self contentInset];
       contentInset.bottom =
           MAX(contentInset.bottom,
@@ -313,6 +319,12 @@ NS_ASSUME_NONNULL_END
     [UIView performWithoutAnimation:^{
       CGFloat hiddenHeaderOffsetY = [self hiddenHeaderOffsetY];
       if (hiddenHeaderOffsetY <= 0) {
+          return;
+      }
+      if ([self keepsSearchBarVisible]) {
+          CGPoint contentOffset = [self contentOffset];
+          contentOffset.y = 0;
+          [self setContentOffset:contentOffset animated:NO];
           return;
       }
 
