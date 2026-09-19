@@ -1,4 +1,4 @@
-# Kayoko 4.3.2+free3
+# Kayoko 4.3.2+free4
 
 Feature-rich clipboard manager for iOS — **free build**.
 
@@ -20,9 +20,9 @@ support footer at the bottom of the root list.
 
 Placed in the **History** group, directly below **Save Images**.
 
-When enabled, the capture **date and time** (`MM-dd` / `HH:mm`, two lines) is drawn
-underneath the app icon. The relative time is then dropped from the detail line so it
-is not shown twice.
+When enabled, the capture **date and time** (`MM-dd` / `HH:mm`) is drawn underneath
+the app icon as two stacked lines. The relative time is then dropped from the detail
+line so it is not shown twice.
 
 Default: **off** — existing behaviour is unchanged until you turn it on.
 
@@ -36,9 +36,45 @@ Data flow:
 | Panel | `Tweak/Core/Controllers/KayokoMainViewController.{h,m}` | property + setter forwarding |
 | List | `Tweak/Core/Controllers/KayokoHistoryListViewController.{h,m}` | forwarding |
 | Table | `Tweak/Core/Views/KayokoHistoryListView.{h,m}` | property, reload, extra row height |
-| Content | `Tweak/Core/Models/KayokoTableViewCellContentProvider.{h,m}` | build the date+time string |
-| Cell | `Tweak/Core/Views/KayokoTableViewCell.{h,m}` | `timestampLabel` under the icon, reuse id |
+| Content | `Tweak/Core/Models/KayokoTableViewCellContentProvider.{h,m}` | build the date / time strings |
+| Cell | `Tweak/Core/Views/KayokoTableViewCell.{h,m}` | two timestamp labels under the icon, reuse id |
 | L10n | `Preferences/Resources/{en,zh-Hans}.lproj/Root.strings` | `Show Time` / `显示时间` |
+
+### 5. Fixed: only the date showed, and the cell was not vertically centred
+
+Reported after the first cut of **Show Time**: the icon column showed `09-19` but
+not `19:26`, the text sat too high in the row, and the layout did not adapt when
+the switch was toggled.
+
+**a) The time line could disappear.** The date and time were emitted as a single
+string with an embedded newline (`MM-dd\nHH:mm`) rendered by one label with
+`numberOfLines = 0`. A wrapped label sizes its intrinsic width to the *widest*
+line, and inside a row with a fixed height the second line could be laid out
+outside the visible bounds and dropped. There are now two labels —
+`timestampDateLabel` and `timestampTimeLabel` — stacked by constraints, each
+sizing to its own content, so one line can no longer swallow the other.
+
+**b) The two columns were not centred against each other.** The icon was pinned to
+the cell's centre, but the timestamp hangs *below* the icon. With the timestamp
+visible the left column is therefore taller than the icon alone, so pinning the
+icon to the centre pushed the whole column upward relative to the text block —
+which is why the text looked top-heavy. Turning the timestamp off then reset the
+icon through a different branch, so the two states disagreed.
+
+Both columns are now laid out as blocks and centred independently:
+
+- left column = icon + optional timestamp, centred as a unit;
+- right column = title / preview / item details, centred as a unit.
+
+The icon's own centre pin was removed and replaced by a conditional layout guide,
+so the row adapts to every combination of the switch, the preview line count and
+the item-details mode.
+
+**c) The row height is now derived, not guessed.** The extra height added for the
+timestamp is computed from the real font metrics
+(`icon + gap + 2 × lineHeight + insets`) instead of a hand-tuned constant, and only
+the shortfall against the base row height is added. A future font or Dynamic Type
+change can no longer silently clip the time again.
 
 ### 3. Fixed: dpkg could not run the post-install script
 
