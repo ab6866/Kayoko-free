@@ -76,6 +76,7 @@ static NSString *const kKayokoPreferenceKeyPreviewLineCount = @"PreviewLineCount
 static NSString *const kKayokoPreferenceKeyItemDetailsMode = @"ItemDetailsMode";
 static NSString *const kKayokoPreferenceKeyShowIconAndTime = @"ShowIconAndTime";
 static NSString *const kKayokoPreferenceKeyShowBoldText = @"ShowBoldText";
+static NSString *const kKayokoPreferenceKeyKeepSearchVisible = @"KeepSearchVisible";
 static NSString *const kKayokoPreferenceKeyHeightInPoints = @"HeightInPoints";
 
 static BOOL const kKayokoPreferenceKeyEnabledDefaultValue = YES;
