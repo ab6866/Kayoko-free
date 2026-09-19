@@ -75,6 +75,7 @@ static NSString *const kKayokoPreferenceKeyPlayHapticFeedback = @"PlayHapticFeed
 static NSString *const kKayokoPreferenceKeyPreviewLineCount = @"PreviewLineCount";
 static NSString *const kKayokoPreferenceKeyItemDetailsMode = @"ItemDetailsMode";
 static NSString *const kKayokoPreferenceKeyShowIconAndTime = @"ShowIconAndTime";
+static NSString *const kKayokoPreferenceKeyShowBoldText = @"ShowBoldText";
 static NSString *const kKayokoPreferenceKeyHeightInPoints = @"HeightInPoints";
 
 static BOOL const kKayokoPreferenceKeyEnabledDefaultValue = YES;
@@ -103,4 +104,5 @@ static BOOL const kKayokoPreferenceKeyPlayHapticFeedbackDefaultValue = YES;
 static NSUInteger const kKayokoPreferenceKeyPreviewLineCountDefaultValue = 1;
 static KayokoItemDetailsMode const kKayokoPreferenceKeyItemDetailsModeDefaultValue = kKayokoItemDetailsModeImagesOnly;
 static BOOL const kKayokoPreferenceKeyShowIconAndTimeDefaultValue = NO;
+static BOOL const kKayokoPreferenceKeyShowBoldTextDefaultValue = NO;
 static CGFloat const kKayokoPreferenceKeyHeightInPointsDefaultValue = 420;

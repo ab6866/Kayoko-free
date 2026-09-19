@@ -1,4 +1,4 @@
-# Kayoko 4.3.2+free4
+# Kayoko 4.3.2+free6
 
 Feature-rich clipboard manager for iOS — **free build**.
 

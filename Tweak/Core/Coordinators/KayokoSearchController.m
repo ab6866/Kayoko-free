@@ -139,6 +139,11 @@ NS_ASSUME_NONNULL_END
 }
 
 - (void)handleApplicationMetadataChanged {
+    // The installed application set changed, so every cached display name and
+    // installed/not-installed answer is potentially wrong. Drop them before
+    // rebuilding the token list, otherwise a just-installed app keeps the
+    // "not installed" answer it was given earlier.
+    [[self metadataProvider] invalidateCache];
     [self invalidateAppTokensAndReloadIfActive];
 }
 
@@ -222,8 +227,11 @@ NS_ASSUME_NONNULL_END
 }
 
 - (NSString *)appDisplaySignatureForBundleIdentifier:(NSString *)bundleIdentifier title:(NSString *)title {
-    BOOL installed = [[self metadataProvider] hasApplicationForBundleIdentifier:bundleIdentifier];
-    return [NSString stringWithFormat:@"installed=%@;title=%@", installed ? @"1" : @"0", title ?: @""];
+    // Both callers build this right after -hasApplicationForBundleIdentifier:
+    // returned YES, so it is always installed here and the extra XPC round trip
+    // the old implementation made (just to learn what it already knew) is gone.
+    (void)bundleIdentifier;
+    return [NSString stringWithFormat:@"installed=1;title=%@", title ?: @""];
 }
 
 - (KayokoSearchToken *)selectedCategoryTokenForCriteria:(KayokoSearchCriteria *)criteria
@@ -498,24 +506,33 @@ NS_ASSUME_NONNULL_END
 }
 
 - (NSArray<KayokoSearchToken *> *)appTokensFromBundleIdentifiers:(NSArray<NSString *> *)bundleIdentifiers {
+    // Resolve every display name ONCE, up front.
+    //
+    // This used to call -displayNameForBundleIdentifier: inside the sort
+    // comparator (twice per comparison, so O(n log n) XPC round trips) and then
+    // again once per element to build the token. The provider now caches, but
+    // hoisting the lookup out of the comparator is the real fix: the comparator
+    // runs on the main thread and sorting ~150 apps meant several thousand
+    // SpringBoard calls, which is what made opening search feel like a hang.
+    NSMutableDictionary<NSString *, NSString *> *displayNames = [[NSMutableDictionary alloc] init];
     NSMutableArray<NSString *> *installedBundleIdentifiers = [[NSMutableArray alloc] init];
     for (NSString *bundleIdentifier in bundleIdentifiers) {
         if ([[self metadataProvider] hasApplicationForBundleIdentifier:bundleIdentifier]) {
             [installedBundleIdentifiers addObject:bundleIdentifier];
+            [displayNames setObject:[[self metadataProvider] displayNameForBundleIdentifier:bundleIdentifier]
+                             forKey:bundleIdentifier];
         }
     }
 
     NSArray<NSString *> *sortedBundleIdentifiers =
         [installedBundleIdentifiers sortedArrayUsingComparator:^NSComparisonResult(NSString *left, NSString *right) {
-          NSString *leftName = [[self metadataProvider] displayNameForBundleIdentifier:left];
-          NSString *rightName = [[self metadataProvider] displayNameForBundleIdentifier:right];
-          NSComparisonResult result = [leftName localizedStandardCompare:rightName];
+          NSComparisonResult result = [displayNames[left] localizedStandardCompare:displayNames[right]];
           return result == NSOrderedSame ? [left localizedStandardCompare:right] : result;
         }];
     NSMutableArray<KayokoSearchToken *> *appTokens =
         [[NSMutableArray alloc] initWithCapacity:[sortedBundleIdentifiers count]];
     for (NSString *bundleIdentifier in sortedBundleIdentifiers) {
-        NSString *title = [[self metadataProvider] displayNameForBundleIdentifier:bundleIdentifier];
+        NSString *title = displayNames[bundleIdentifier];
         [appTokens
             addObject:[KayokoSearchToken tokenWithType:kKayokoSearchTokenTypeApp
                                                  value:bundleIdentifier

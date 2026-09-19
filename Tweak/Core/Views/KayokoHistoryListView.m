@@ -12,6 +12,11 @@
 static CGFloat const kKayokoHistoryListViewBaseRowHeight = 65;
 static CGFloat const kKayokoHistoryListViewAdditionalPreviewLineHeight = 18;
 static CGFloat const kKayokoHistoryListViewDetailLineHeight = 15;
+// Extra height when the time caption is drawn under the app icon. The icon is
+// 40pt and the 11pt caption plus its 3pt gap is ~16pt, so the left column grows
+// from 40 to ~56 -- just over the 6pt top/bottom breathing room the cell keeps
+// around the icon column.
+static CGFloat const kKayokoHistoryListViewTimestampLineHeight = 14;
 static NSUInteger const kKayokoHistoryListViewMaximumPreviewLineCount = 3;
 static CGFloat const kKayokoHistoryListViewHiddenHeaderInsetPadding = 1;
 static CGFloat const kKayokoHistoryListViewVerticalFadeHeight = 20;
@@ -381,6 +386,7 @@ NS_ASSUME_NONNULL_END
         [self setEdgeFadeEnabled:YES];
         _itemDetailsMode = kKayokoItemDetailsModeImagesOnly;
         _showIconAndTime = kKayokoPreferenceKeyShowIconAndTimeDefaultValue;
+        _showBoldText = kKayokoPreferenceKeyShowBoldTextDefaultValue;
         [self setPreviewLineCount:1];
     }
 
@@ -415,16 +421,30 @@ NS_ASSUME_NONNULL_END
     [self reloadData];
 }
 
+- (void)setShowBoldText:(BOOL)showBoldText {
+    if (_showBoldText == showBoldText) {
+        return;
+    }
+    _showBoldText = showBoldText;
+    // A bolder text weight changes the line height of every label, so the row
+    // height and the reuse identifier (which encodes the weight) both have to be
+    // refreshed before the rows are rebuilt.
+    [self updateRowHeightForCurrentDisplayOptions];
+    [self reloadData];
+}
+
 - (void)updateRowHeightForCurrentDisplayOptions {
     CGFloat detailHeight =
         [self itemDetailsMode] == kKayokoItemDetailsModeAll ? kKayokoHistoryListViewDetailLineHeight : 0;
-    // "Show Time" used to add height here, because the timestamp was a second
-    // stacked line below the icon. It now sits on the title row inside the
-    // existing title height, so the row height is deliberately independent of
-    // that switch -- turning it on no longer makes every row taller.
+    // "Show Time" puts the time under the app icon, which makes the left column
+    // taller than a bare icon -- so unlike the previous pass the row height does
+    // depend on the switch again. The extra room is only needed on the shortest
+    // row; the taller preview-line rows already have it.
+    CGFloat timestampHeight =
+        [self showIconAndTime] ? kKayokoHistoryListViewTimestampLineHeight : 0;
     [self setRowHeight:kKayokoHistoryListViewBaseRowHeight +
                        ([self previewLineCount] - 1) * kKayokoHistoryListViewAdditionalPreviewLineHeight +
-                       detailHeight];
+                       detailHeight + timestampHeight];
 }
 
 @end

@@ -202,6 +202,7 @@ NS_ASSUME_NONNULL_BEGIN
 @property(nonatomic, assign) NSUInteger previewLineCount;
 @property(nonatomic, assign) KayokoItemDetailsMode itemDetailsMode;
 @property(nonatomic, assign) BOOL showIconAndTime;
+@property(nonatomic, assign) BOOL showBoldText;
 @property(nonatomic, assign) CGFloat heightInPoints;
 
 #pragma mark - Feedback
@@ -246,6 +247,7 @@ NS_ASSUME_NONNULL_END
         _previewLineCount = 1;
         _itemDetailsMode = kKayokoPreferenceKeyItemDetailsModeDefaultValue;
         _showIconAndTime = kKayokoPreferenceKeyShowIconAndTimeDefaultValue;
+        _showBoldText = kKayokoPreferenceKeyShowBoldTextDefaultValue;
         _heightInPoints = 420;
         _activePresentationMode = KayokoPanelPresentationModePortraitDrawer;
         _pasteSuppressionState = [[KayokoPasteSuppressionState alloc] init];
@@ -632,6 +634,7 @@ NS_ASSUME_NONNULL_END
         kKayokoPreferenceKeyPreviewLineCount : @(kKayokoPreferenceKeyPreviewLineCountDefaultValue),
         kKayokoPreferenceKeyItemDetailsMode : @(kKayokoPreferenceKeyItemDetailsModeDefaultValue),
         kKayokoPreferenceKeyShowIconAndTime : @(kKayokoPreferenceKeyShowIconAndTimeDefaultValue),
+        kKayokoPreferenceKeyShowBoldText : @(kKayokoPreferenceKeyShowBoldTextDefaultValue),
         kKayokoPreferenceKeyHeightInPoints : @(kKayokoPreferenceKeyHeightInPointsDefaultValue),
     }];
 

@@ -16,6 +16,7 @@ NS_ASSUME_NONNULL_BEGIN
 @property(nonatomic, assign) NSUInteger previewLineCount;
 @property(nonatomic, assign) KayokoItemDetailsMode itemDetailsMode;
 @property(nonatomic, assign) BOOL showIconAndTime;
+@property(nonatomic, assign) BOOL showBoldText;
 @property(nonatomic, assign) CGFloat keyboardBottomInset;
 @property(nonatomic, assign) CGFloat searchBarSnapHeight;
 

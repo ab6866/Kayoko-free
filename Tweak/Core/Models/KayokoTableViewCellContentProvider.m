@@ -16,7 +16,8 @@ NS_ASSUME_NONNULL_BEGIN
 @interface KayokoTableViewCellContentProvider ()
 @property(nonatomic, strong) KayokoApplicationMetadataProvider *metadataProvider;
 @property(nonatomic, strong) NSRelativeDateTimeFormatter *relativeDateTimeFormatter;
-@property(nonatomic, strong) NSDateFormatter *compactTimestampFormatter;
+@property(nonatomic, strong) NSDateFormatter *compactTimestampTimeFormatter;
+@property(nonatomic, strong) NSDateFormatter *compactTimestampDateFormatter;
 @property(nonatomic, strong) NSByteCountFormatter *byteCountFormatter;
 @property(nonatomic, strong) NSCache<NSString *, NSNumber *> *characterCountCache;
 @end
@@ -39,20 +40,24 @@ NS_ASSUME_NONNULL_END
         }
         _byteCountFormatter = [[NSByteCountFormatter alloc] init];
         [_byteCountFormatter setCountStyle:NSByteCountFormatterCountStyleFile];
-        _compactTimestampFormatter = [[NSDateFormatter alloc] init];
-        // Shown on the title row right after the app icon, so the whole thing
-        // has to stay on one line and remain narrow enough that the title is
-        // still readable. "09-19 19:26" is 11 characters at 11pt -- about 60pt
-        // wide -- which leaves the title the majority of the row. The date is
-        // kept (rather than a bare time) because history spans days and a
-        // time-only stamp is ambiguous across them.
-        [_compactTimestampFormatter setDateStyle:NSDateFormatterNoStyle];
-        [_compactTimestampFormatter setTimeStyle:NSDateFormatterNoStyle];
-        [_compactTimestampFormatter setDateFormat:@"MM-dd HH:mm"];
+        _compactTimestampTimeFormatter = [[NSDateFormatter alloc] init];
+        // Two formatters, one per half of the stamp: the time is a caption under
+        // the app icon and the date is a right-hand column. "19:26" is ~29pt at
+        // 11pt, which fits the icon's 40pt column; the date keeps the month and
+        // day because history spans days and a bare time is ambiguous across
+        // them.
+        [_compactTimestampTimeFormatter setDateStyle:NSDateFormatterNoStyle];
+        [_compactTimestampTimeFormatter setTimeStyle:NSDateFormatterNoStyle];
+        [_compactTimestampTimeFormatter setDateFormat:@"HH:mm"];
+        _compactTimestampDateFormatter = [[NSDateFormatter alloc] init];
+        [_compactTimestampDateFormatter setDateStyle:NSDateFormatterNoStyle];
+        [_compactTimestampDateFormatter setTimeStyle:NSDateFormatterNoStyle];
+        [_compactTimestampDateFormatter setDateFormat:@"MM-dd"];
 
         if ([localizationIdentifier length] > 0) {
             NSLocale *locale = [[NSLocale alloc] initWithLocaleIdentifier:localizationIdentifier];
-            [_compactTimestampFormatter setLocale:locale];
+            [_compactTimestampTimeFormatter setLocale:locale];
+            [_compactTimestampDateFormatter setLocale:locale];
         }
         _characterCountCache = [[NSCache alloc] init];
         [_characterCountCache setCountLimit:256];
@@ -71,8 +76,12 @@ NS_ASSUME_NONNULL_END
     return [[self relativeDateTimeFormatter] localizedStringForDate:date relativeToDate:now];
 }
 
-- (NSString *)compactTimestampTextForDate:(NSDate *)date {
-    return [[self compactTimestampFormatter] stringFromDate:date];
+- (NSString *)compactTimestampTimeTextForDate:(NSDate *)date {
+    return [[self compactTimestampTimeFormatter] stringFromDate:date];
+}
+
+- (NSString *)compactTimestampDateTextForDate:(NSDate *)date {
+    return [[self compactTimestampDateFormatter] stringFromDate:date];
 }
 
 - (NSUInteger)visibleCharacterCountForText:(NSString *)text {
@@ -129,6 +138,7 @@ NS_ASSUME_NONNULL_END
                    previewLineCount:previewLineCount
                     itemDetailsMode:itemDetailsMode
                      showIconAndTime:NO
+                       showsBoldText:NO
                          searchText:nil];
 }
 
@@ -140,6 +150,7 @@ NS_ASSUME_NONNULL_END
                    previewLineCount:previewLineCount
                     itemDetailsMode:itemDetailsMode
                      showIconAndTime:showIconAndTime
+                       showsBoldText:NO
                          searchText:nil];
 }
 
@@ -147,6 +158,20 @@ NS_ASSUME_NONNULL_END
                                   previewLineCount:(NSUInteger)previewLineCount
                                    itemDetailsMode:(KayokoItemDetailsMode)itemDetailsMode
                                     showIconAndTime:(BOOL)showIconAndTime
+                                      showsBoldText:(BOOL)showsBoldText {
+    return [self cellContentForItem:item
+                   previewLineCount:previewLineCount
+                    itemDetailsMode:itemDetailsMode
+                     showIconAndTime:showIconAndTime
+                       showsBoldText:showsBoldText
+                         searchText:nil];
+}
+
+- (KayokoTableViewCellContent *)cellContentForItem:(KayokoPasteboardItem *)item
+                                  previewLineCount:(NSUInteger)previewLineCount
+                                   itemDetailsMode:(KayokoItemDetailsMode)itemDetailsMode
+                                    showIconAndTime:(BOOL)showIconAndTime
+                                      showsBoldText:(BOOL)showsBoldText
                                         searchText:(nullable NSString *)searchText {
     KayokoTableViewCellContent *content = [[KayokoTableViewCellContent alloc] init];
     NSString *bundleIdentifier = [item bundleIdentifier];
@@ -161,13 +186,18 @@ NS_ASSUME_NONNULL_END
                                                                                   searchText:searchText]
                                                                : nil];
 
-    // When "Show Time" is on, the capture date+time is rendered on the title
-    // row, and the relative time is dropped from the detail line below.
-    NSString *headerTimestampText = nil;
+    // When "Show Time" is on, the capture time is drawn under the app icon and
+    // the date is drawn at the trailing edge, so the relative time is dropped
+    // from the detail line below -- the absolute stamp already answers "when".
+    NSString *headerTimestampTimeText = nil;
+    NSString *headerTimestampDateText = nil;
     if (showIconAndTime && [item capturedAt]) {
-        headerTimestampText = [self compactTimestampTextForDate:[item capturedAt]];
+        headerTimestampTimeText = [self compactTimestampTimeTextForDate:[item capturedAt]];
+        headerTimestampDateText = [self compactTimestampDateTextForDate:[item capturedAt]];
     }
-    [content setTimestampText:headerTimestampText];
+    [content setTimestampTimeText:headerTimestampTimeText];
+    [content setTimestampDateText:headerTimestampDateText];
+    [content setShowsBoldText:showsBoldText];
 
     KayokoTag *tag = [[KayokoTagCatalog sharedCatalog] tagForUUID:[item tagUUID]];
     [content setTagHexColor:[tag hexColor]];
@@ -178,7 +208,7 @@ NS_ASSUME_NONNULL_END
     [content setShowsDetail:showsDetail];
     if (showsDetail) {
         NSMutableArray<NSString *> *detailComponents = [[NSMutableArray alloc] initWithCapacity:3];
-        if ([item capturedAt] && [headerTimestampText length] == 0) {
+        if ([item capturedAt] && [headerTimestampTimeText length] == 0) {
             [detailComponents addObject:[self relativeTimeTextForDate:[item capturedAt]]];
         }
         if (isImage) {

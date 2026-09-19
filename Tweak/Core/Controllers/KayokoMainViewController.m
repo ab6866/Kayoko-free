@@ -320,6 +320,12 @@ NS_ASSUME_NONNULL_END
     [[self favoritesListViewController] setShowIconAndTime:showIconAndTime];
 }
 
+- (void)setShowBoldText:(BOOL)showBoldText {
+    _showBoldText = showBoldText;
+    [[self historyListViewController] setShowBoldText:showBoldText];
+    [[self favoritesListViewController] setShowBoldText:showBoldText];
+}
+
 - (void)setClearButtonMode:(KayokoClearButtonMode)clearButtonMode {
     if (clearButtonMode != kKayokoClearButtonModeOff && clearButtonMode != kKayokoClearButtonModeHistoryOnly &&
         clearButtonMode != kKayokoClearButtonModeAlways) {

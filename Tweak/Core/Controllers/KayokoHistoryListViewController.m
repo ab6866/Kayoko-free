@@ -123,6 +123,14 @@ NS_ASSUME_NONNULL_END
     return [[self tableView] showIconAndTime];
 }
 
+- (void)setShowBoldText:(BOOL)showBoldText {
+    [[self tableView] setShowBoldText:showBoldText];
+}
+
+- (BOOL)showBoldText {
+    return [[self tableView] showBoldText];
+}
+
 - (void)refreshSearchPlaceholder {
     BOOL showsNoSearchResults = [self hasActiveSearch] && ![self isBrowsingSearchTokens] && [[self items] count] > 0 &&
                                 [[self displayedItems] count] == 0;
@@ -145,6 +153,7 @@ NS_ASSUME_NONNULL_END
                                                                             previewLineCount:[self previewLineCount]
                                                                              itemDetailsMode:[self itemDetailsMode]
                                                                               showIconAndTime:[self showIconAndTime]
+                                                                                showsBoldText:[self showBoldText]
                                                                                   searchText:[self searchText]];
         KayokoTableViewCell *cell = (KayokoTableViewCell *)[[self tableView] cellForRowAtIndexPath:indexPath];
         [cell applyDetailContent:content];
@@ -678,6 +687,7 @@ NS_ASSUME_NONNULL_END
                                                                         previewLineCount:[self previewLineCount]
                                                                          itemDetailsMode:[self itemDetailsMode]
                                                                           showIconAndTime:[self showIconAndTime]
+                                                                            showsBoldText:[self showBoldText]
                                                                               searchText:[self searchText]];
 
     KayokoTableViewCell *cell =
@@ -716,6 +726,7 @@ NS_ASSUME_NONNULL_END
                                                                         previewLineCount:[self previewLineCount]
                                                                          itemDetailsMode:[self itemDetailsMode]
                                                                           showIconAndTime:[self showIconAndTime]
+                                                                            showsBoldText:[self showBoldText]
                                                                               searchText:[self searchText]];
     NSString *reuseIdentifier = [KayokoTableViewCell reuseIdentifierForContent:content];
     KayokoTableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:reuseIdentifier];

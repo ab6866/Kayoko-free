@@ -38,10 +38,41 @@ NS_ASSUME_NONNULL_BEGIN
 NS_ASSUME_NONNULL_END
 
 @interface KayokoApplicationMetadataProvider ()
+@property(nonatomic, strong) NSMutableDictionary<NSString *, NSString *> *displayNameCache;
+@property(nonatomic, strong) NSMutableDictionary<NSString *, NSNumber *> *installedCache;
 - (nullable SBApplication *)applicationForBundleIdentifier:(NSString *)bundleIdentifier;
 @end
 
 @implementation KayokoApplicationMetadataProvider
+
+- (instancetype)init {
+    self = [super init];
+    if (self) {
+        _displayNameCache = [[NSMutableDictionary alloc] init];
+        _installedCache = [[NSMutableDictionary alloc] init];
+    }
+    return self;
+}
+
+- (void)invalidateCache {
+    [[self displayNameCache] removeAllObjects];
+    [[self installedCache] removeAllObjects];
+}
+
+// A single XPC round trip per bundle identifier, remembered afterwards. The
+// negative result ("this app is not installed") is cached too -- it is exactly
+// the case that made the search token list slow, because uninstalled bundle
+// identifiers show up in history and were re-queried on every reload.
+- (nullable SBApplication *)cachedApplicationForBundleIdentifier:(NSString *)bundleIdentifier {
+    NSNumber *cachedInstalled = [[self installedCache] objectForKey:bundleIdentifier];
+    if (cachedInstalled && ![cachedInstalled boolValue]) {
+        return nil;
+    }
+
+    SBApplication *application = [self applicationForBundleIdentifier:bundleIdentifier];
+    [[self installedCache] setObject:@(application != nil) forKey:bundleIdentifier];
+    return application;
+}
 
 - (NSString *)displayNameForBundleIdentifier:(NSString *)bundleIdentifier {
     if ([self isContinuityBundleIdentifier:bundleIdentifier]) {
@@ -62,8 +93,16 @@ NS_ASSUME_NONNULL_END
                                                                              table:@"Tweak"];
     }
 
-    NSString *displayName = [[self applicationForBundleIdentifier:bundleIdentifier] displayName];
-    return [displayName length] > 0 ? displayName : bundleIdentifier;
+    NSString *cacheKey = bundleIdentifier ?: @"";
+    NSString *cachedName = [[self displayNameCache] objectForKey:cacheKey];
+    if (cachedName) {
+        return cachedName;
+    }
+
+    NSString *displayName = [[self cachedApplicationForBundleIdentifier:bundleIdentifier] displayName];
+    NSString *resolvedName = [displayName length] > 0 ? displayName : (bundleIdentifier ?: @"");
+    [[self displayNameCache] setObject:resolvedName forKey:cacheKey];
+    return resolvedName;
 }
 
 - (BOOL)isContinuityBundleIdentifier:(NSString *)bundleIdentifier {
@@ -102,7 +141,10 @@ NS_ASSUME_NONNULL_END
     if ([self isSpringBoardBundleIdentifier:bundleIdentifier]) {
         return YES;
     }
-    return [self applicationForBundleIdentifier:bundleIdentifier] != nil;
+
+    // Shares the cache with -displayNameForBundleIdentifier: so the token list,
+    // which needs both answers per bundle identifier, only pays for one lookup.
+    return [self cachedApplicationForBundleIdentifier:bundleIdentifier] != nil;
 }
 
 - (nullable UIImage *)continuityIcon {

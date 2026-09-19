@@ -25,6 +25,12 @@ NS_ASSUME_NONNULL_BEGIN
                                   previewLineCount:(NSUInteger)previewLineCount
                                    itemDetailsMode:(KayokoItemDetailsMode)itemDetailsMode
                                     showIconAndTime:(BOOL)showIconAndTime
+                                      showsBoldText:(BOOL)showsBoldText;
+- (KayokoTableViewCellContent *)cellContentForItem:(KayokoPasteboardItem *)item
+                                  previewLineCount:(NSUInteger)previewLineCount
+                                   itemDetailsMode:(KayokoItemDetailsMode)itemDetailsMode
+                                    showIconAndTime:(BOOL)showIconAndTime
+                                      showsBoldText:(BOOL)showsBoldText
                                         searchText:(nullable NSString *)searchText;
 
 - (void)loadThumbnailForItem:(KayokoPasteboardItem *)item
