@@ -11,6 +11,10 @@
 
 static int const kKayokoApplicationIconFormatListRow = 1;
 static int const kKayokoApplicationIconFormatSearchToken = 5;
+// IconServices always has an icon for Safari, so it is a reliable neutral
+// placeholder when a bundle identifier cannot be resolved (an app that was
+// uninstalled, a revoked bundle id, etc.).
+static NSString *const kKayokoFallbackBundleIdentifier = @"com.apple.WebSheet";
 static NSString *const kKayokoSpotlightBundleIdentifier = @"com.apple.Spotlight";
 static NSString *const kKayokoSpringBoardBundleIdentifier = @"com.apple.springboard";
 
@@ -143,14 +147,16 @@ NS_ASSUME_NONNULL_END
 - (nullable UIImage *)applicationIconForBundleIdentifier:(NSString *)bundleIdentifier
                                                   format:(int)format
                                                    scale:(CGFloat)scale {
-    NSString *effectiveBundleIdentifier = [bundleIdentifier length] > 0 ? bundleIdentifier : @"com.apple.WebSheet";
+    NSString *effectiveBundleIdentifier = [bundleIdentifier length] > 0 ? bundleIdentifier : kKayokoFallbackBundleIdentifier;
     // IconServices already caches this lookup; retaining another copy here would keep placeholder images stale after
     // the corresponding application becomes available.
     UIImage *icon = [UIImage _applicationIconImageForBundleIdentifier:effectiveBundleIdentifier
                                                                format:format
                                                                 scale:scale];
-    if (!icon && ![effectiveBundleIdentifier isEqualToString:@"com.apple.WebSheet"]) {
-        icon = [UIImage _applicationIconImageForBundleIdentifier:@"com.apple.WebSheet" format:format scale:scale];
+    if (!icon && ![effectiveBundleIdentifier isEqualToString:kKayokoFallbackBundleIdentifier]) {
+        icon = [UIImage _applicationIconImageForBundleIdentifier:kKayokoFallbackBundleIdentifier
+                                                          format:format
+                                                           scale:scale];
     }
     return icon;
 }

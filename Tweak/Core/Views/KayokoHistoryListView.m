@@ -12,14 +12,6 @@
 static CGFloat const kKayokoHistoryListViewBaseRowHeight = 65;
 static CGFloat const kKayokoHistoryListViewAdditionalPreviewLineHeight = 18;
 static CGFloat const kKayokoHistoryListViewDetailLineHeight = 15;
-// Height the icon+timestamp column needs when "Show Time" is on:
-// icon (40) + gap (3) + date line + time line. Derived from the real font
-// metrics instead of a hand-tuned constant, so a Dynamic Type change or a
-// different font size cannot silently clip the time line again.
-static CGFloat const kKayokoHistoryListViewTimestampIconHeight = 40;
-static CGFloat const kKayokoHistoryListViewTimestampIconGap = 3;
-static CGFloat const kKayokoHistoryListViewTimestampFontSize = 9;
-static CGFloat const kKayokoHistoryListViewTimestampVerticalInsets = 12;
 static NSUInteger const kKayokoHistoryListViewMaximumPreviewLineCount = 3;
 static CGFloat const kKayokoHistoryListViewHiddenHeaderInsetPadding = 1;
 static CGFloat const kKayokoHistoryListViewVerticalFadeHeight = 20;
@@ -379,6 +371,11 @@ NS_ASSUME_NONNULL_END
         [self setName:name];
         [self setBackgroundColor:[UIColor clearColor]];
         [self setAlwaysBounceVertical:YES];
+        // The cell content starts at 24pt (the icon's leading inset). The system
+        // default separator inset is 15pt, which made every divider look
+        // misaligned against the icons; match the content instead so the
+        // separators read as belonging to the columns.
+        [self setSeparatorInset:UIEdgeInsetsMake(0, 24, 0, 0)];
         [self setEdgeFadeAxis:KayokoEdgeFadeAxisVertical];
         [self setEdgeFadeWidth:kKayokoHistoryListViewVerticalFadeHeight];
         [self setEdgeFadeEnabled:YES];
@@ -421,23 +418,13 @@ NS_ASSUME_NONNULL_END
 - (void)updateRowHeightForCurrentDisplayOptions {
     CGFloat detailHeight =
         [self itemDetailsMode] == kKayokoItemDetailsModeAll ? kKayokoHistoryListViewDetailLineHeight : 0;
-    // When "Show Time" is on, the left column is taller than the base row
-    // assumes: the timestamp's two stacked 9pt lines hang below the 40pt icon.
-    // Compute the height the column actually needs and only add the shortfall,
-    // so rows that already have room (e.g. several preview lines) are not
-    // inflated unnecessarily.
-    CGFloat timestampHeight = 0;
-    if ([self showIconAndTime]) {
-        CGFloat lineHeight =
-            ceil([UIFont systemFontOfSize:kKayokoHistoryListViewTimestampFontSize].lineHeight);
-        CGFloat leftColumnHeight = kKayokoHistoryListViewTimestampIconHeight +
-                                   kKayokoHistoryListViewTimestampIconGap + lineHeight * 2 +
-                                   kKayokoHistoryListViewTimestampVerticalInsets;
-        timestampHeight = MAX(leftColumnHeight - kKayokoHistoryListViewBaseRowHeight, 0);
-    }
+    // "Show Time" used to add height here, because the timestamp was a second
+    // stacked line below the icon. It now sits on the title row inside the
+    // existing title height, so the row height is deliberately independent of
+    // that switch -- turning it on no longer makes every row taller.
     [self setRowHeight:kKayokoHistoryListViewBaseRowHeight +
                        ([self previewLineCount] - 1) * kKayokoHistoryListViewAdditionalPreviewLineHeight +
-                       detailHeight + timestampHeight];
+                       detailHeight];
 }
 
 @end

@@ -1196,6 +1196,8 @@ NS_ASSUME_NONNULL_END
 
 - (void)updateFavoritesButtonForHistoryKey:(NSString *)historyKey {
     BOOL showingFavorites = [historyKey isEqualToString:kKayokoHistoryKeyFavorites];
+    // Inactive stays an outline heart; only the active state fills and tints, so
+    // the header does not show a solid heart while you are browsing History.
     NSString *imageName = showingFavorites ? @"heart.fill" : @"heart";
     UIColor *tintColor = showingFavorites ? [UIColor systemPinkColor] : [UIColor labelColor];
     KayokoHeaderView *headerView = [[self mainView] headerView];
@@ -1215,7 +1217,7 @@ NS_ASSUME_NONNULL_END
 
     UIImageSymbolConfiguration *configuration =
         [UIImageSymbolConfiguration configurationWithPointSize:kKayokoFavoritesButtonImageSize
-                                                        weight:UIImageSymbolWeightMedium];
+                                                        weight:UIImageSymbolWeightRegular];
     return [[UIImage systemImageNamed:@"keyboard"] imageWithConfiguration:configuration];
 }
 

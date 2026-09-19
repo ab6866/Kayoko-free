@@ -44,8 +44,13 @@ static CGFloat const kKayokoTrailingHeaderButtonCenterSpacing = 44;
         [_leadingButton setTranslatesAutoresizingMaskIntoConstraints:NO];
 
         _titleLabel = [[UILabel alloc] init];
-        [_titleLabel setFont:[UIFont systemFontOfSize:26 weight:UIFontWeightSemibold]];
+        // 26pt read as a page banner rather than a section title next to the
+        // 24pt header buttons; 22pt sits closer to the iOS "large title" step
+        // and leaves the buttons visually independent.
+        [_titleLabel setFont:[UIFont systemFontOfSize:22 weight:UIFontWeightSemibold]];
         [_titleLabel setTextColor:[UIColor labelColor]];
+        [_titleLabel setAdjustsFontSizeToFitWidth:YES];
+        [_titleLabel setMinimumScaleFactor:0.85];
         [self addSubview:_titleLabel];
         [_titleLabel setTranslatesAutoresizingMaskIntoConstraints:NO];
 
@@ -110,8 +115,10 @@ static CGFloat const kKayokoTrailingHeaderButtonCenterSpacing = 44;
                withImageName:(NSString *)imageName
                    imageSize:(NSUInteger)imageSize
                    tintColor:(UIColor *)color {
+    // Weight .regular rather than .medium: at a matched 22pt the header buttons
+    // carry the same presence as the title without competing with it.
     UIImageSymbolConfiguration *configuration =
-        [UIImageSymbolConfiguration configurationWithPointSize:imageSize weight:UIImageSymbolWeightMedium];
+        [UIImageSymbolConfiguration configurationWithPointSize:imageSize weight:UIImageSymbolWeightRegular];
     UIImage *image = [UIImage systemImageNamed:imageName] ?: [UIImage systemImageNamed:@"doc.on.doc"];
     [button setImage:[image imageWithConfiguration:configuration] forState:UIControlStateNormal];
     [button setTintColor:color];

@@ -28,8 +28,10 @@
 "CopyVault data is invalid: %@" = "CopyVault data is invalid: %@";
 "Dates" = "Dates";
 "Favorites" = "Favorites";
+"Favorites Empty Hint" = "Tap the heart on an item to keep it here.";
 "Flights" = "Flights";
 "History" = "History";
+"History Empty Hint" = "Copy something and it will show up here.";
 "History item not found" = "History item not found";
 "Images" = "Images";
 "Imported file %@ already contains different data." = "Imported file %@ already contains different data.";

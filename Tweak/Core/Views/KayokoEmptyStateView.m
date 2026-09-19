@@ -12,6 +12,7 @@ NS_ASSUME_NONNULL_BEGIN
 @property(nonatomic, strong) UIStackView *contentStackView;
 @property(nonatomic, strong) UIStackView *actionButtonStackView;
 @property(nonatomic, strong) UILabel *messageLabel;
+@property(nonatomic, strong) UILabel *hintLabel;
 @property(nonatomic, strong) UIButton *actionButton;
 @property(nonatomic, strong) NSLayoutConstraint *contentStackViewCenterYConstraint;
 @property(nonatomic, copy, nullable) void (^actionHandler)(void);
@@ -28,15 +29,26 @@ NS_ASSUME_NONNULL_END
         [self setContentStackView:[[UIStackView alloc] init]];
         [[self contentStackView] setAxis:UILayoutConstraintAxisVertical];
         [[self contentStackView] setAlignment:UIStackViewAlignmentCenter];
-        [[self contentStackView] setSpacing:18];
+        [[self contentStackView] setSpacing:6];
         [self addSubview:[self contentStackView]];
 
         [self setMessageLabel:[[UILabel alloc] init]];
-        [[self messageLabel] setFont:[UIFont systemFontOfSize:17 weight:UIFontWeightMedium]];
-        [[self messageLabel] setTextColor:[UIColor secondaryLabelColor]];
+        [[self messageLabel] setFont:[UIFont systemFontOfSize:17 weight:UIFontWeightSemibold]];
+        [[self messageLabel] setTextColor:[UIColor labelColor]];
         [[self messageLabel] setTextAlignment:NSTextAlignmentCenter];
         [[self messageLabel] setNumberOfLines:0];
         [[self contentStackView] addArrangedSubview:[self messageLabel]];
+
+        // A bare "No History Items" tells the user nothing actionable. The hint
+        // line explains how items get here, which is the actual question when
+        // the list is empty for the first time.
+        [self setHintLabel:[[UILabel alloc] init]];
+        [[self hintLabel] setFont:[UIFont systemFontOfSize:14 weight:UIFontWeightRegular]];
+        [[self hintLabel] setTextColor:[UIColor secondaryLabelColor]];
+        [[self hintLabel] setTextAlignment:NSTextAlignmentCenter];
+        [[self hintLabel] setNumberOfLines:0];
+        [[self hintLabel] setHidden:YES];
+        [[self contentStackView] addArrangedSubview:[self hintLabel]];
 
         [self setActionButtonStackView:[[UIStackView alloc] init]];
         [[self actionButtonStackView] setAxis:UILayoutConstraintAxisHorizontal];
@@ -61,6 +73,7 @@ NS_ASSUME_NONNULL_END
         [[self contentStackView] setTranslatesAutoresizingMaskIntoConstraints:NO];
         [[self actionButtonStackView] setTranslatesAutoresizingMaskIntoConstraints:NO];
         [[self messageLabel] setTranslatesAutoresizingMaskIntoConstraints:NO];
+        [[self hintLabel] setTranslatesAutoresizingMaskIntoConstraints:NO];
         [[self actionButton] setTranslatesAutoresizingMaskIntoConstraints:NO];
         [self setContentStackViewCenterYConstraint:[[[self contentStackView] centerYAnchor]
                                                        constraintEqualToAnchor:[self centerYAnchor]]];
@@ -75,6 +88,9 @@ NS_ASSUME_NONNULL_END
             [[[self messageLabel] leadingAnchor] constraintGreaterThanOrEqualToAnchor:[self leadingAnchor] constant:24],
             [[[self messageLabel] trailingAnchor] constraintLessThanOrEqualToAnchor:[self trailingAnchor] constant:-24],
             [[[self messageLabel] widthAnchor] constraintLessThanOrEqualToAnchor:[self widthAnchor] constant:-48],
+            [[[self hintLabel] leadingAnchor] constraintGreaterThanOrEqualToAnchor:[self leadingAnchor] constant:24],
+            [[[self hintLabel] trailingAnchor] constraintLessThanOrEqualToAnchor:[self trailingAnchor] constant:-24],
+            [[[self hintLabel] widthAnchor] constraintLessThanOrEqualToAnchor:[self widthAnchor] constant:-48],
             [[[self actionButtonStackView] widthAnchor] constraintEqualToConstant:86],
             [[[self actionButtonStackView] heightAnchor] constraintEqualToConstant:36]
         ]];
@@ -102,15 +118,20 @@ NS_ASSUME_NONNULL_END
 
 - (void)updateWithHistoryKey:(NSString *)historyKey {
     [self clearActionButton];
-    NSString *localizationKey =
-        [historyKey isEqualToString:kKayokoHistoryKeyFavorites] ? @"No Favorite Items" : @"No History Items";
-    NSString *titleKey = [historyKey isEqualToString:kKayokoHistoryKeyFavorites] ? @"Favorites" : @"History";
-    [self setName:[[KayokoPasteboardManager localizationBundle] localizedStringForKey:titleKey
-                                                                                value:nil
-                                                                                table:@"Tweak"]];
-    [[self messageLabel] setText:[[KayokoPasteboardManager localizationBundle] localizedStringForKey:localizationKey
-                                                                                               value:nil
-                                                                                               table:@"Tweak"]];
+    BOOL showingFavorites = [historyKey isEqualToString:kKayokoHistoryKeyFavorites];
+    NSBundle *bundle = [KayokoPasteboardManager localizationBundle];
+    [self setName:[bundle localizedStringForKey:(showingFavorites ? @"Favorites" : @"History")
+                                           value:nil
+                                           table:@"Tweak"]];
+    [[self messageLabel]
+        setText:[bundle localizedStringForKey:(showingFavorites ? @"No Favorite Items" : @"No History Items")
+                                        value:nil
+                                        table:@"Tweak"]];
+    [[self hintLabel] setText:[bundle localizedStringForKey:(showingFavorites ? @"Favorites Empty Hint"
+                                                                             : @"History Empty Hint")
+                                                      value:nil
+                                                      table:@"Tweak"]];
+    [[self hintLabel] setHidden:NO];
 }
 
 - (void)updateWithStorageError:(NSError *)error {
@@ -121,6 +142,10 @@ NS_ASSUME_NONNULL_END
     NSString *format = [bundle localizedStringForKey:@"%@\n%@" value:nil table:@"Tweak"];
     NSString *detail = [[error localizedDescription] length] > 0 ? [error localizedDescription] : [error description];
     [[self messageLabel] setText:[NSString stringWithFormat:format, title, detail ?: @""]];
+    // No actionable advice here: an error is not something the user can fix by
+    // copying something, so the hint stays out of the way.
+    [[self hintLabel] setHidden:YES];
+    [[self hintLabel] setText:nil];
 }
 
 - (void)updateWithAuthorizationRequiredActionHandler:(void (^)(void))actionHandler {
@@ -129,6 +154,8 @@ NS_ASSUME_NONNULL_END
     [[self messageLabel] setText:[bundle localizedStringForKey:@"Open Settings → “Kayoko” to complete verification."
                                                          value:nil
                                                          table:@"Tweak"]];
+    [[self hintLabel] setHidden:YES];
+    [[self hintLabel] setText:nil];
     [[self actionButton] setTitle:[bundle localizedStringForKey:@"Continue" value:nil table:@"Tweak"]
                          forState:UIControlStateNormal];
     [self setActionHandler:actionHandler];

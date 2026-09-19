@@ -13,9 +13,9 @@ NS_ASSUME_NONNULL_BEGIN
 @property(nonatomic, copy) NSString *displayName;
 @property(nonatomic, copy, nullable) NSAttributedString *attributedDisplayName;
 @property(nonatomic, copy, nullable) NSString *tagHexColor;
-// Rendered as two stacked labels under the app icon ("09-19" / "19:26").
-@property(nonatomic, copy, nullable) NSString *timestampDateText;
-@property(nonatomic, copy, nullable) NSString *timestampTimeText;
+// Rendered as a single line on the title row, right after the app icon
+// ("09-19 19:26").
+@property(nonatomic, copy, nullable) NSString *timestampText;
 @property(nonatomic, copy) NSString *contentText;
 @property(nonatomic, copy, nullable) NSAttributedString *attributedContentText;
 @property(nonatomic, copy, nullable) NSAttributedString *attributedDetailText;

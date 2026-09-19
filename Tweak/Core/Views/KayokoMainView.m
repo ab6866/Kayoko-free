@@ -94,6 +94,9 @@
             [self headerTrailingConstraint]
         ]];
 
+        // Outline variants for all three: a filled "heart" next to an outline
+        // "trash" made the header look like two different icon sets. Outline
+        // weights also read better against the blur when the panel is dimmed.
         [[self headerView] updateStyleForButton:[[self headerView] leadingButton]
                                   withImageName:@"heart"
                                       imageSize:kKayokoFavoritesButtonImageSize

@@ -15,13 +15,13 @@ NS_ASSUME_NONNULL_BEGIN
 
 @property(nonatomic, strong) UIImageView *iconImageView;
 @property(nonatomic, strong) UILabel *headerLabel;
-// The timestamp is split into two labels rather than one two-line label: with a
-// single label the intrinsic width is the *widest* line, and `numberOfLines = 0`
-// combined with a bounded row height can drop the second line entirely ("19:26"
-// went missing). Two stacked labels each size to their own content and cannot
-// swallow one another.
-@property(nonatomic, strong, nullable) UILabel *timestampDateLabel;
-@property(nonatomic, strong, nullable) UILabel *timestampTimeLabel;
+// The timestamp sits on the title row, immediately to the right of the app
+// icon and to the left of the title. It is one single-line "MM-dd HH:mm"
+// label: the earlier two-line variant under the icon forced a taller row and
+// read as a second column, which made the row height depend on a text style
+// toggle. Keeping it on the title line means the row height is identical with
+// the timestamp on or off.
+@property(nonatomic, strong, nullable) UILabel *timestampLabel;
 @property(nonatomic, strong, nullable) UIView *tagDotView;
 @property(nonatomic, strong, nullable) UILabel *contentLabel;
 @property(nonatomic, strong, nullable) UILabel *detailLabel;

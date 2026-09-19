@@ -9,17 +9,28 @@
 #import "KayokoTableViewCellContent.h"
 #import "KayokoTagColorFormatter.h"
 
+#import <QuartzCore/QuartzCore.h>
+
 static CGFloat const kKayokoTableViewCellTagDotSize = 7;
 static CGFloat const kKayokoTableViewCellContentImageWidth = 70;
 static CGFloat const kKayokoTableViewCellContentImageSingleLineHeight = 40;
 static CGFloat const kKayokoTableViewCellContentImageAdditionalLineHeight = 15;
 static NSUInteger const kKayokoTableViewCellMaximumPreviewLineCount = 3;
-// The timestamp sits under the 40pt icon, so it may exceed the icon width a
-// little without overlapping the title (they are vertically separated).
-static CGFloat const kKayokoTableViewCellTimestampMaximumWidth = 64;
-// Icon (40pt) + gap + date line + time line, both at 9pt.
-static CGFloat const kKayokoTableViewCellTimestampFontSize = 9;
-static CGFloat const kKayokoTableViewCellTimestampIconGap = 3;
+// The icon is 40pt. iOS app icons are squircles roughly 22.37% of their side in
+// corner radius, which is what the system uses for the Home Screen; a fixed 10pt
+// was noticeably squarer than the icons it was drawing.
+static CGFloat const kKayokoTableViewCellIconSideLength = 40;
+static CGFloat const kKayokoTableViewCellIconCornerRadius = 9;
+// The timestamp shares the title row, so it must stay narrow enough to leave the
+// title usable. "09-19 19:26" at 11pt is ~60pt; cap it a little above that and
+// let the label shrink rather than wrap.
+static CGFloat const kKayokoTableViewCellTimestampMaximumWidth = 72;
+// 11pt reads clearly at a glance, unlike the 9pt this used to be.
+static CGFloat const kKayokoTableViewCellTimestampFontSize = 11;
+// Gap between the app icon and the timestamp on the title row.
+static CGFloat const kKayokoTableViewCellIconTimestampSpacing = 8;
+// Gap between the timestamp and the title that follows it.
+static CGFloat const kKayokoTableViewCellTimestampTitleSpacing = 8;
 
 @interface KayokoTableViewCellPreviewLabel : UILabel
 @end
@@ -46,7 +57,7 @@ static CGFloat const kKayokoTableViewCellTimestampIconGap = 3;
     BOOL hasContentImageSlot = [content contentImage] || [[content thumbnailImageName] length] > 0;
     BOOL hasTagDot = [[content tagHexColor] length] > 0;
     BOOL hasContentText = [[content contentText] length] > 0;
-    BOOL hasTimestamp = [[content timestampDateText] length] > 0 || [[content timestampTimeText] length] > 0;
+    BOOL hasTimestamp = [[content timestampText] length] > 0;
     return [NSString stringWithFormat:@"KayokoTableViewCell-%lu-%d-%d-%d-%d-%d", (unsigned long)lineCount,
                                       hasContentImageSlot, hasTagDot, hasContentText, [content showsDetail],
                                       hasTimestamp];
@@ -75,7 +86,7 @@ static CGFloat const kKayokoTableViewCellTimestampIconGap = 3;
         CGSize contentImageViewSize = [[self class] contentImageViewSizeForPreviewLineCount:lineCount];
         BOOL hasContentText = [[content contentText] length] > 0;
         BOOL showsDetail = [content showsDetail];
-        BOOL hasTimestamp = [[content timestampDateText] length] > 0 || [[content timestampTimeText] length] > 0;
+        BOOL hasTimestamp = [[content timestampText] length] > 0;
         [self setBackgroundColor:[UIColor clearColor]];
         UIView *selectedBackgroundView = [[UIView alloc] init];
         UIColor *selectedBackgroundColor =
@@ -92,15 +103,24 @@ static CGFloat const kKayokoTableViewCellTimestampIconGap = 3;
         [self setIconImageView:[[UIImageView alloc] init]];
         [[self iconImageView] setContentMode:UIViewContentModeScaleAspectFit];
         [[self iconImageView] setClipsToBounds:YES];
-        [[[self iconImageView] layer] setCornerRadius:10];
+        [[[self iconImageView] layer] setCornerRadius:kKayokoTableViewCellIconCornerRadius];
+        // Continuous curvature: a plain circular corner on a 40pt tile looks
+        // visibly different from the squircle iOS uses for app icons, which is
+        // the giveaway when a row mixes system icons with this one.
+        [[[self iconImageView] layer] setCornerCurve:kCACornerCurveContinuous];
+        // Matches the hairline the settings header draws around its icon, so an
+        // icon whose artwork does not reach the edges still reads as a tile.
+        [[[self iconImageView] layer] setBorderWidth:0.5];
+        [[[self iconImageView] layer]
+            setBorderColor:[[[UIColor labelColor] colorWithAlphaComponent:0.10] CGColor]];
         [self addSubview:[self iconImageView]];
 
         [[self iconImageView] setTranslatesAutoresizingMaskIntoConstraints:NO];
         // No centerY pin here: vertical placement is resolved later, once we
-        // know whether a timestamp is present (see "Vertical alignment" below).
+        // know which labels are present (see "Vertical alignment" below).
         [NSLayoutConstraint activateConstraints:@[
-            [[[self iconImageView] widthAnchor] constraintEqualToConstant:40],
-            [[[self iconImageView] heightAnchor] constraintEqualToConstant:40],
+            [[[self iconImageView] widthAnchor] constraintEqualToConstant:kKayokoTableViewCellIconSideLength],
+            [[[self iconImageView] heightAnchor] constraintEqualToConstant:kKayokoTableViewCellIconSideLength],
             [[[self iconImageView] leadingAnchor] constraintEqualToAnchor:[self leadingAnchor] constant:24]
         ]];
 
@@ -116,7 +136,8 @@ static CGFloat const kKayokoTableViewCellTimestampIconGap = 3;
             [[self contentImageView] setClipsToBounds:YES];
             [[self contentImageView]
                 setBackgroundColor:contentImage ? [UIColor clearColor] : [UIColor tertiarySystemFillColor]];
-            [[[self contentImageView] layer] setCornerRadius:4];
+            [[[self contentImageView] layer] setCornerRadius:6];
+            [[[self contentImageView] layer] setCornerCurve:kCACornerCurveContinuous];
             [self addSubview:[self contentImageView]];
 
             [[self contentImageView] setTranslatesAutoresizingMaskIntoConstraints:NO];
@@ -139,57 +160,50 @@ static CGFloat const kKayokoTableViewCellTimestampIconGap = 3;
         [self addSubview:[self headerLabel]];
 
         [[self headerLabel] setTranslatesAutoresizingMaskIntoConstraints:NO];
-        [NSLayoutConstraint activateConstraints:@[ [[[self headerLabel] leadingAnchor]
-                                                    constraintEqualToAnchor:[[self iconImageView] trailingAnchor]
-                                                                   constant:16] ]];
 
         NSLayoutXAxisAnchor *textTrailingAnchor =
             [self contentImageView] ? [[self contentImageView] leadingAnchor] : [self trailingAnchor];
         CGFloat textTrailingConstant = [self contentImageView] ? -16 : -24;
 
-        // Timestamp lives directly under the app icon (left column), so the
-        // title row stays clean and the full date+time is visible. It is two
-        // separate labels: a single two-line label sized its intrinsic width to
-        // the widest line and could drop the time line inside a fixed-height row.
+        // The timestamp shares the title row: icon -> timestamp -> title. It used
+        // to hang below the icon as two stacked lines, which made the left column
+        // taller than the icon and forced the row height to depend on a text
+        // style toggle. On the title line the row height is the same with the
+        // timestamp on or off, and the eye reads "when" and "what" together.
         if (hasTimestamp) {
-            [self setTimestampDateLabel:[[UILabel alloc] init]];
-            [[self timestampDateLabel] setFont:[UIFont systemFontOfSize:kKayokoTableViewCellTimestampFontSize
-                                                                  weight:UIFontWeightRegular]];
-            [[self timestampDateLabel] setTextColor:[UIColor secondaryLabelColor]];
-            [[self timestampDateLabel] setTextAlignment:NSTextAlignmentCenter];
-            [[self timestampDateLabel] setLineBreakMode:NSLineBreakByClipping];
-            [self addSubview:[self timestampDateLabel]];
+            [self setTimestampLabel:[[UILabel alloc] init]];
+            [[self timestampLabel] setFont:[UIFont systemFontOfSize:kKayokoTableViewCellTimestampFontSize
+                                                             weight:UIFontWeightRegular]];
+            [[self timestampLabel] setTextColor:[UIColor secondaryLabelColor]];
+            [[self timestampLabel] setTextAlignment:NSTextAlignmentLeft];
+            [[self timestampLabel] setLineBreakMode:NSLineBreakByTruncatingTail];
+            // Never wrap: this is a fixed-format stamp on a single-line row.
+            [[self timestampLabel] setNumberOfLines:1];
+            // The timestamp is fixed-length; it should neither stretch to fill
+            // slack nor get squeezed to nothing when the title is long. The title
+            // wins the tug-of-war and truncates instead.
+            [[self timestampLabel] setContentHuggingPriority:UILayoutPriorityRequired
+                                                     forAxis:UILayoutConstraintAxisHorizontal];
+            [[self timestampLabel] setContentCompressionResistancePriority:UILayoutPriorityRequired
+                                                                  forAxis:UILayoutConstraintAxisHorizontal];
+            [self addSubview:[self timestampLabel]];
+            [[self timestampLabel] setTranslatesAutoresizingMaskIntoConstraints:NO];
 
-            [self setTimestampTimeLabel:[[UILabel alloc] init]];
-            [[self timestampTimeLabel] setFont:[UIFont systemFontOfSize:kKayokoTableViewCellTimestampFontSize
-                                                                  weight:UIFontWeightRegular]];
-            [[self timestampTimeLabel] setTextColor:[UIColor secondaryLabelColor]];
-            [[self timestampTimeLabel] setTextAlignment:NSTextAlignmentCenter];
-            [[self timestampTimeLabel] setLineBreakMode:NSLineBreakByClipping];
-            [self addSubview:[self timestampTimeLabel]];
-
-            for (UILabel *label in @[ [self timestampDateLabel], [self timestampTimeLabel] ]) {
-                [label setTranslatesAutoresizingMaskIntoConstraints:NO];
-                [label setContentHuggingPriority:UILayoutPriorityRequired
-                                         forAxis:UILayoutConstraintAxisHorizontal];
-                [label setContentCompressionResistancePriority:UILayoutPriorityRequired
-                                                       forAxis:UILayoutConstraintAxisHorizontal];
-            }
-
-            // The two lines are the same height by construction, so constraining
-            // the time label below the date label is enough to stack them.
             [NSLayoutConstraint activateConstraints:@[
-                [[[self timestampDateLabel] topAnchor] constraintEqualToAnchor:[[self iconImageView] bottomAnchor]
-                                                                      constant:kKayokoTableViewCellTimestampIconGap],
-                [[[self timestampDateLabel] centerXAnchor] constraintEqualToAnchor:[[self iconImageView] centerXAnchor]],
-                [[[self timestampDateLabel] widthAnchor]
+                [[[self timestampLabel] leadingAnchor] constraintEqualToAnchor:[[self iconImageView] trailingAnchor]
+                                                                      constant:kKayokoTableViewCellIconTimestampSpacing],
+                [[[self timestampLabel] centerYAnchor] constraintEqualToAnchor:[[self iconImageView] centerYAnchor]],
+                [[[self timestampLabel] widthAnchor]
                     constraintLessThanOrEqualToConstant:kKayokoTableViewCellTimestampMaximumWidth],
-
-                [[[self timestampTimeLabel] topAnchor] constraintEqualToAnchor:[[self timestampDateLabel] bottomAnchor]],
-                [[[self timestampTimeLabel] centerXAnchor] constraintEqualToAnchor:[[self iconImageView] centerXAnchor]],
-                [[[self timestampTimeLabel] widthAnchor]
-                    constraintLessThanOrEqualToConstant:kKayokoTableViewCellTimestampMaximumWidth]
+                [[[self headerLabel] leadingAnchor] constraintEqualToAnchor:[[self timestampLabel] trailingAnchor]
+                                                                   constant:kKayokoTableViewCellTimestampTitleSpacing],
+                [[[self timestampLabel] trailingAnchor] constraintLessThanOrEqualToAnchor:textTrailingAnchor
+                                                                                 constant:textTrailingConstant]
             ]];
+        } else {
+            [NSLayoutConstraint activateConstraints:@[ [[[self headerLabel] leadingAnchor]
+                                                        constraintEqualToAnchor:[[self iconImageView] trailingAnchor]
+                                                                       constant:16] ]];
         }
 
         if ([[content tagHexColor] length] > 0) {
@@ -287,41 +301,21 @@ static CGFloat const kKayokoTableViewCellTimestampIconGap = 3;
         // Vertical alignment.
         //
         // The icon used to be pinned to the cell centre while the timestamp hung
-        // below it. That is only correct when the timestamp is hidden: with the
-        // timestamp on, the icon+time column is taller than it looks, so the
-        // column (and the icon inside it) was dragged upwards relative to the
-        // text block, and the text appeared top-heavy. Turning the timestamp off
-        // then reset the icon to the centre by a different code path, so the two
-        // states did not agree.
-        //
-        // Instead, treat the left column (icon + optional timestamp) and the
-        // right column (title/preview/detail) as two blocks and centre each of
-        // them vertically. This adapts to every combination of the timestamp
-        // switch, preview line count and item-details mode.
-        if (hasTimestamp) {
-            // Left column: icon top -> timestamp bottom, centred as a unit.
-            [[[self iconImageView] topAnchor] constraintGreaterThanOrEqualToAnchor:[self topAnchor]
-                                                                          constant:6]
-                .active = YES;
-            [[[self timestampTimeLabel] bottomAnchor] constraintLessThanOrEqualToAnchor:[self bottomAnchor]
-                                                                               constant:-6]
-                .active = YES;
-
-            UILayoutGuide *leftColumnGuide = [[UILayoutGuide alloc] init];
-            [self addLayoutGuide:leftColumnGuide];
-            [NSLayoutConstraint activateConstraints:@[
-                [[leftColumnGuide topAnchor] constraintEqualToAnchor:[[self iconImageView] topAnchor]],
-                [[leftColumnGuide bottomAnchor] constraintEqualToAnchor:[[self timestampTimeLabel] bottomAnchor]],
-                [[leftColumnGuide centerYAnchor] constraintEqualToAnchor:[self centerYAnchor]]
-            ]];
-        } else {
-            // No timestamp: the icon column is just the icon.
-            [NSLayoutConstraint activateConstraints:@[
-                [[[self iconImageView] topAnchor] constraintGreaterThanOrEqualToAnchor:[self topAnchor] constant:6],
-                [[[self iconImageView] bottomAnchor] constraintLessThanOrEqualToAnchor:[self bottomAnchor]
-                                                                             constant:-6]
-            ]];
-        }
+        // below it, which dragged the whole left column upwards when the
+        // timestamp was on and left the two states disagreeing. The timestamp
+        // now shares the title row, so the left column IS the icon (40pt) and
+        // the original centre pin is correct again in both states -- but it is
+        // expressed as bounds plus a guide rather than a hard pin, so a future
+        // taller row still keeps the icon inside it.
+        UILayoutGuide *iconColumnGuide = [[UILayoutGuide alloc] init];
+        [self addLayoutGuide:iconColumnGuide];
+        [NSLayoutConstraint activateConstraints:@[
+            [[iconColumnGuide topAnchor] constraintEqualToAnchor:[[self iconImageView] topAnchor]],
+            [[iconColumnGuide bottomAnchor] constraintEqualToAnchor:[[self iconImageView] bottomAnchor]],
+            [[iconColumnGuide centerYAnchor] constraintEqualToAnchor:[self centerYAnchor]],
+            [[[self iconImageView] topAnchor] constraintGreaterThanOrEqualToAnchor:[self topAnchor] constant:6],
+            [[[self iconImageView] bottomAnchor] constraintLessThanOrEqualToAnchor:[self bottomAnchor] constant:-6]
+        ]];
 
         // Right column: the text block centred as a unit.
         NSLayoutYAxisAnchor *textColumnBottomAnchor =
@@ -350,8 +344,7 @@ static CGFloat const kKayokoTableViewCellTimestampIconGap = 3;
     [[self iconImageView] setImage:nil];
     [[self headerLabel] setAttributedText:nil];
     [[self headerLabel] setText:nil];
-    [[self timestampDateLabel] setText:nil];
-    [[self timestampTimeLabel] setText:nil];
+    [[self timestampLabel] setText:nil];
     [[self tagDotView] setBackgroundColor:nil];
     [[self contentLabel] setAttributedText:nil];
     [[self contentLabel] setText:nil];
@@ -396,11 +389,8 @@ static CGFloat const kKayokoTableViewCellTimestampIconGap = 3;
         [[self tagDotView] setBackgroundColor:[KayokoTagColorFormatter visibleColorFromHexColor:[content tagHexColor]]];
     }
 
-    if ([self timestampDateLabel]) {
-        [[self timestampDateLabel] setText:[content timestampDateText]];
-    }
-    if ([self timestampTimeLabel]) {
-        [[self timestampTimeLabel] setText:[content timestampTimeText]];
+    if ([self timestampLabel]) {
+        [[self timestampLabel] setText:[content timestampText]];
     }
 
     NSUInteger lineCount = MIN(MAX([content previewLineCount], 1), kKayokoTableViewCellMaximumPreviewLineCount);

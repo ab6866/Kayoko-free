@@ -5,6 +5,8 @@
 
 #import "KayokoHeaderCell.h"
 
+#import <QuartzCore/QuartzCore.h>
+
 @implementation KayokoHeaderCell
 
 - (instancetype)initWithStyle:(UITableViewCellStyle)style
@@ -24,6 +26,7 @@
         [[self iconImageView] setContentMode:UIViewContentModeScaleAspectFit];
         [[self iconImageView] setClipsToBounds:YES];
         [[[self iconImageView] layer] setCornerRadius:10];
+        [[[self iconImageView] layer] setCornerCurve:kCACornerCurveContinuous];
         [[[self iconImageView] layer] setBorderWidth:0.5];
         [[[self iconImageView] layer] setBorderColor:[[[UIColor labelColor] colorWithAlphaComponent:0.10] CGColor]];
         [[self contentView] addSubview:[self iconImageView]];
