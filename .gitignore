@@ -8,6 +8,13 @@ references/
 __handlers__/
 compile_commands.json
 
+# Local build output. Deb artifacts belong on the Release page, not in the tree:
+# committing them made every checkout carry megabytes of binaries and left the
+# tree dirty whenever a download directory was cleaned up.
+outputs/
+outputs-*/
+dl-*/
+
 # Created by https://www.toptal.com/developers/gitignore/api/swift,xcode,macos
 # Edit at https://www.toptal.com/developers/gitignore?templates=swift,xcode,macos
 
