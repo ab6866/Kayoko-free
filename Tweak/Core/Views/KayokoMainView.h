@@ -33,6 +33,10 @@ NS_ASSUME_NONNULL_BEGIN
 
 - (void)setTitleText:(NSString *)title;
 - (void)setClearButtonEnabledForItemCount:(NSUInteger)itemCount;
+// Drives the item-count capsule that rides directly after the header title.
+// Pass `hidden:YES` for content that has no list count (preview, word selection,
+// clear confirmation, storage error). Empty lists still show an explicit 0.
+- (void)setItemCountBadgeHidden:(BOOL)hidden count:(NSUInteger)count;
 - (UIEdgeInsets)effectiveContentSafeAreaInsets;
 - (CGFloat)safeAreaBottomInsetForContentView:(nullable UIView *)contentView;
 - (void)installContentView:(UIView *)contentView hidden:(BOOL)hidden;

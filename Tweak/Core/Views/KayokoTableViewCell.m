@@ -26,17 +26,59 @@ static CGFloat const kKayokoTableViewCellIconCornerRadius = 9;
 static CGFloat const kKayokoTableViewCellTimestampFontSize = 11;
 // Gap between the bottom of the icon and the baseline area of its time caption.
 static CGFloat const kKayokoTableViewCellIconTimestampSpacing = 3;
+// Inset of the date from the trailing edge of the ROW. This is an absolute
+// position, not a relative one: the date forms a column down the right-hand side
+// and must not move when a row happens to carry a content thumbnail.
+static CGFloat const kKayokoTableViewCellTimestampDateTrailingSpacing = 24;
+// "09-19" at 11pt Regular is ~30pt. Reserving that as a hard minimum means the
+// date can never be compressed into an ellipsis however long the surrounding
+// content is; it is the difference between "the date is showing" and "the date
+// is showing a fragment".
+static CGFloat const kKayokoTableViewCellTimestampDateMinimumWidth = 34;
+// Gap the text column must leave before the date column. The date is a fixed
+// column that has to stay legible, so the title and the preview text are the
+// ones that yield: they stop this far short of where the date begins rather
+// than running underneath it.
+static CGFloat const kKayokoTableViewCellTimestampDateTextSpacing = 8;
+// Optical alignment of the text column against the 40pt icon.
+//
+// The icon is the tallest thing in the row and everything else is aligned to it.
+// A 16pt label's line box is ~19pt tall while the glyphs inside it are ~11.5pt,
+// so the visible top of a line sits roughly 3.5pt below the label's frame top;
+// pulling the label up by that much puts the title's CAP HEIGHT level with the
+// icon's top edge, which is what the eye reads as "aligned".
+static CGFloat const kKayokoTableViewCellTitleIconOpticalOffset = 3.5;
+// Same idea at the bottom: the last line's visible baseline sits a few points
+// above the frame bottom, so the content label is pushed down slightly to land
+// its descenders on the icon's bottom edge.
+static CGFloat const kKayokoTableViewCellContentIconOpticalOffset = -1;
 
+// A preview label that draws its text from the TOP of its frame instead of
+// vertically centred.
+//
+// Why a subclass at all: the preview's height is a fixed `lineHeight * lines`,
+// which for a single line is a fraction taller than the glyphs themselves. UIKit
+// centres the glyphs in that box, so a one-line preview sat a point or two lower
+// than the title above it and the two-line preview looked detached. Pinning the
+// text rect to the top keeps the first preview line welded to the title.
+//
+// The previous implementation ALSO reset the rect's width and origin, which let
+// text overflow the label. `size.width` is deliberately left alone here: the
+// text is clipped/truncated inside the label's own bounds, and the row reserves
+// the date column with a constraint instead.
 @interface KayokoTableViewCellPreviewLabel : UILabel
 @end
 
 @implementation KayokoTableViewCellPreviewLabel
 
+- (CGRect)textRectForBounds:(CGRect)bounds limitedToNumberOfLines:(NSInteger)numberOfLines {
+    CGRect textRect = [super textRectForBounds:bounds limitedToNumberOfLines:numberOfLines];
+    textRect.origin.y = bounds.origin.y;
+    return textRect;
+}
+
 - (void)drawTextInRect:(CGRect)rect {
-    CGRect textRect = [self textRectForBounds:rect limitedToNumberOfLines:[self numberOfLines]];
-    textRect.origin = rect.origin;
-    textRect.size.width = rect.size.width;
-    [super drawTextInRect:textRect];
+    [super drawTextInRect:[self textRectForBounds:rect limitedToNumberOfLines:[self numberOfLines]]];
 }
 
 @end
@@ -82,6 +124,7 @@ static CGFloat const kKayokoTableViewCellIconTimestampSpacing = 3;
         BOOL hasContentText = [[content contentText] length] > 0;
         BOOL showsDetail = [content showsDetail];
         BOOL hasTimestamp = [[content timestampTimeText] length] > 0 || [[content timestampDateText] length] > 0;
+        BOOL hasTimestampDate = [[content timestampDateText] length] > 0;
         BOOL showsBoldText = [content showsBoldText];
         [self setBackgroundColor:[UIColor clearColor]];
         UIView *selectedBackgroundView = [[UIView alloc] init];
@@ -140,8 +183,7 @@ static CGFloat const kKayokoTableViewCellIconTimestampSpacing = 3;
             [NSLayoutConstraint activateConstraints:@[
                 [[[self contentImageView] widthAnchor] constraintEqualToConstant:contentImageViewSize.width],
                 [[[self contentImageView] heightAnchor] constraintEqualToConstant:contentImageViewSize.height],
-                [[[self contentImageView] centerYAnchor] constraintEqualToAnchor:[self centerYAnchor]],
-                [[[self contentImageView] trailingAnchor] constraintEqualToAnchor:[self trailingAnchor] constant:-24]
+                [[[self contentImageView] centerYAnchor] constraintEqualToAnchor:[self centerYAnchor]]
             ]];
         }
 
@@ -161,10 +203,6 @@ static CGFloat const kKayokoTableViewCellIconTimestampSpacing = 3;
         [self addSubview:[self headerLabel]];
 
         [[self headerLabel] setTranslatesAutoresizingMaskIntoConstraints:NO];
-
-        NSLayoutXAxisAnchor *textTrailingAnchor =
-            [self contentImageView] ? [[self contentImageView] leadingAnchor] : [self trailingAnchor];
-        CGFloat textTrailingConstant = [self contentImageView] ? -16 : -24;
 
         // The timestamp is split: the time is a caption under the icon, the date
         // is a right-hand column at the same height.
@@ -226,16 +264,30 @@ static CGFloat const kKayokoTableViewCellIconTimestampSpacing = 3;
                                                                  [[self iconImageView] leadingAnchor]],
                 [[[self timestampTimeLabel] trailingAnchor] constraintLessThanOrEqualToAnchor:
                                                                   [[self iconImageView] trailingAnchor]],
-                // Date: right-aligned, vertically centred on the time so the two
-                // halves of the stamp read as one line across the row.
+                // Date: right-aligned to the ROW's trailing edge -- always the
+                // same x, whatever the item contains.
                 //
-                // The trailing edge is the thumbnail's leading edge when there is
-                // a thumbnail, because otherwise the date would be drawn on top
-                // of it -- both would be pinned to the row's trailing edge.
-                [[[self timestampDateLabel] trailingAnchor] constraintEqualToAnchor:textTrailingAnchor
-                                                                           constant:textTrailingConstant],
+                // It is deliberately NOT anchored to textTrailingAnchor: that
+                // anchor moves leftwards when a content thumbnail is present, so
+                // pinning the date to it made the date jump next to the image on
+                // image items and sit at the far right on text items. A column of
+                // dates has to line up down the list, so it belongs to the row
+                // edge, not to whatever else is on the row.
+                //
+                // No collision with the thumbnail: the thumbnail is centred and
+                // the date sits at the caption's height, below it (the caption
+                // lives under the icon, which is the bottom of the left column).
+                [[[self timestampDateLabel] trailingAnchor] constraintEqualToAnchor:[self trailingAnchor]
+                                                                           constant:
+                                                                               -kKayokoTableViewCellTimestampDateTrailingSpacing],
                 [[[self timestampDateLabel] centerYAnchor]
                     constraintEqualToAnchor:[[self timestampTimeLabel] centerYAnchor]],
+                // Hard floor: the date may never be squeezed narrower than the
+                // width its own text needs. Without this, a long title or a long
+                // preview could compress the stamp and the date would render as
+                // an ellipsis ("...9-19") instead of a date.
+                [[[self timestampDateLabel] widthAnchor]
+                    constraintGreaterThanOrEqualToConstant:kKayokoTableViewCellTimestampDateMinimumWidth],
                 // Never let the date run into the title column, and never let the
                 // two halves of the stamp collide in the middle of the row.
                 [[[self timestampDateLabel] leadingAnchor] constraintGreaterThanOrEqualToAnchor:
@@ -243,6 +295,45 @@ static CGFloat const kKayokoTableViewCellIconTimestampSpacing = 3;
                                                                           constant:16]
             ]];
         }
+
+        // Resolve the horizontal columns only after the date label exists. A
+        // previous version asked `timestampDateLabel.leadingAnchor` for its
+        // anchor before creating the label, which produced a nil anchor and
+        // silently left the title/preview unconstrained. The date column is
+        // now the stable right-hand boundary for every other right-side item.
+        NSLayoutXAxisAnchor *dateLeadingAnchor =
+            hasTimestampDate ? [[self timestampDateLabel] leadingAnchor] : nil;
+        if ([self contentImageView]) {
+            // The thumbnail yields to the fixed date column instead of sharing
+            // the row's trailing inset with it. This prevents the date from
+            // being painted over by an image item while preserving its x
+            // position across every row.
+            NSLayoutXAxisAnchor *imageTrailingAnchor = dateLeadingAnchor ?: [self trailingAnchor];
+            CGFloat imageTrailingConstant = dateLeadingAnchor
+                                               ? -kKayokoTableViewCellTimestampDateTextSpacing
+                                               : -24;
+            [[[self contentImageView] trailingAnchor]
+                constraintEqualToAnchor:imageTrailingAnchor
+                               constant:imageTrailingConstant].active = YES;
+        }
+
+        // Where the text column is allowed to end. When a date is present it
+        // owns a reserved strip at the row's right edge. If a thumbnail is
+        // present, text stops before the thumbnail; otherwise it stops before
+        // the date itself. Either way, the preview can only truncate inside its
+        // own frame and cannot draw through the date column.
+        BOOL reservesDateColumn = hasTimestampDate;
+        NSLayoutXAxisAnchor *textTrailingAnchor =
+            reservesDateColumn && [self contentImageView]
+                ? [[self contentImageView] leadingAnchor]
+                : (reservesDateColumn ? dateLeadingAnchor
+                                      : ([self contentImageView] ? [[self contentImageView] leadingAnchor]
+                                                                 : [self trailingAnchor]));
+        CGFloat textTrailingConstant =
+            reservesDateColumn && [self contentImageView]
+                ? -16
+                : (reservesDateColumn ? -kKayokoTableViewCellTimestampDateTextSpacing
+                                      : ([self contentImageView] ? -16 : -24));
 
         // The title always starts to the right of the icon now: neither half of
         // the timestamp shares its row any more.
@@ -345,11 +436,18 @@ static CGFloat const kKayokoTableViewCellIconTimestampSpacing = 3;
 
         // Vertical alignment.
         //
-        // The left column is the icon plus its time caption. The caption is part
-        // of the column so the icon stays visually welded to its own timestamp
-        // instead of the two drifting apart when the row is taller than the
-        // icon: the guide is centred as a unit, exactly like the text column on
-        // the right. The >= / <= bounds keep the whole column inside the cell.
+        // The two columns are aligned to the ICON, not centred as independent
+        // blocks. That is what the row is actually asking for: the icon is the
+        // row's anchor, the title hangs off its top edge, and the last line of
+        // content sits on its bottom edge. Centring each column separately (the
+        // previous behaviour) made a one-line item and a three-line item drift
+        // off the icon by different amounts, so the icon never looked aligned
+        // with anything.
+        //
+        // The left column still carries the time caption, and the caption is
+        // still part of the column, so the icon cannot detach from its own
+        // timestamp. What changed is that the column's position comes from the
+        // cell's own vertical centre rather than from a centre-of-mass fit.
         NSLayoutYAxisAnchor *iconColumnBottomAnchor =
             hasTimestamp ? [[self timestampTimeLabel] bottomAnchor] : [[self iconImageView] bottomAnchor];
         UILayoutGuide *iconColumnGuide = [[UILayoutGuide alloc] init];
@@ -362,21 +460,57 @@ static CGFloat const kKayokoTableViewCellIconTimestampSpacing = 3;
             [iconColumnBottomAnchor constraintLessThanOrEqualToAnchor:[self bottomAnchor] constant:-6]
         ]];
 
-        // Right column: the text block centred as a unit.
-        NSLayoutYAxisAnchor *textColumnBottomAnchor =
+        // Title top-aligned to the icon's top edge, content bottom-aligned to the
+        // icon's bottom edge.
+        //
+        // Both are equalities at default-high priority so the icon column's own
+        // centring (required) still wins when the row is shorter than the text
+        // needs -- the text may then overflow slightly rather than the icon being
+        // shoved out of the cell. The >= / <= pairs below are the hard bounds
+        // that keep the text inside the cell in every case.
+        NSLayoutYAxisAnchor *textBottomAnchor =
             showsDetail ? [[self detailLabel] bottomAnchor]
                         : (hasContentText ? [[self contentLabel] bottomAnchor] : [[self headerLabel] bottomAnchor]);
-        UILayoutGuide *textColumnGuide = [[UILayoutGuide alloc] init];
-        [self addLayoutGuide:textColumnGuide];
+        NSMutableArray<NSLayoutConstraint *> *iconAlignedConstraints = [NSMutableArray array];
+        // The title's cap-height sits a touch below the label's frame top, so a
+        // bare equality reads as "title slightly low". Lifting by the difference
+        // between the 40pt icon and the 16pt title's line box makes the optical
+        // tops coincide.
+        NSLayoutConstraint *titleTopConstraint =
+            [[[self headerLabel] topAnchor] constraintEqualToAnchor:[[self iconImageView] topAnchor]
+                                                           constant:-kKayokoTableViewCellTitleIconOpticalOffset];
+        [titleTopConstraint setPriority:UILayoutPriorityDefaultHigh];
+        [iconAlignedConstraints addObject:titleTopConstraint];
+        if (textBottomAnchor != [[self headerLabel] bottomAnchor]) {
+            NSLayoutConstraint *contentBottomConstraint =
+                [textBottomAnchor constraintEqualToAnchor:[[self iconImageView] bottomAnchor]
+                                                 constant:kKayokoTableViewCellContentIconOpticalOffset];
+            [contentBottomConstraint setPriority:UILayoutPriorityDefaultHigh];
+            [iconAlignedConstraints addObject:contentBottomConstraint];
+        }
+        [NSLayoutConstraint activateConstraints:iconAlignedConstraints];
+
+        // Hard bounds: the text block may never leave the cell, whatever the
+        // icon alignment above wants to do.
         [NSLayoutConstraint activateConstraints:@[
-            [[textColumnGuide topAnchor] constraintEqualToAnchor:[[self headerLabel] topAnchor]],
-            [[textColumnGuide bottomAnchor] constraintEqualToAnchor:textColumnBottomAnchor],
-            [[textColumnGuide centerYAnchor] constraintEqualToAnchor:[self centerYAnchor]],
-            [[textColumnGuide topAnchor] constraintGreaterThanOrEqualToAnchor:[self topAnchor] constant:6],
-            [[textColumnGuide bottomAnchor] constraintLessThanOrEqualToAnchor:[self bottomAnchor] constant:-6]
+            [[[self headerLabel] topAnchor] constraintGreaterThanOrEqualToAnchor:[self topAnchor] constant:6],
+            [textBottomAnchor constraintLessThanOrEqualToAnchor:[self bottomAnchor] constant:-6]
         ]];
 
         [self applyContent:content];
+
+        // The date column belongs to the row's chrome, not to its content, so
+        // it must sit above anything the content draws. It is added early (with
+        // the other timestamp views) while the preview and detail labels are
+        // added later, which meant a long preview painted straight over the
+        // date. Re-raising the two stamp labels here restores the intended
+        // order: content underneath, the stamp on top.
+        if ([self timestampTimeLabel]) {
+            [self bringSubviewToFront:[self timestampTimeLabel]];
+        }
+        if ([self timestampDateLabel]) {
+            [self bringSubviewToFront:[self timestampDateLabel]];
+        }
     }
 
     return self;

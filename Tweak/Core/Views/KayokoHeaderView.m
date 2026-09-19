@@ -7,11 +7,14 @@
 
 #import "KayokoGrabberView.h"
 #import "KayokoHeaderButtonStyle.h"
+#import "KayokoHeaderCountBadgeView.h"
 
 static CGFloat const kKayokoHeaderHeight = 60;
 static CGFloat const kKayokoTitleTapControlHeight = 44;
 static CGFloat const kKayokoTitleTapControlTrailingSpacing = 8;
 static CGFloat const kKayokoTrailingHeaderButtonCenterSpacing = 44;
+// Gap between the title and the count capsule.
+static CGFloat const kKayokoHeaderCountBadgeLeadingSpacing = 6;
 
 @interface KayokoHeaderView ()
 
@@ -21,6 +24,7 @@ static CGFloat const kKayokoTrailingHeaderButtonCenterSpacing = 44;
 @property(nonatomic, strong, readwrite) UIButton *leadingButton;
 @property(nonatomic, strong, readwrite) UIButton *trailingButton;
 @property(nonatomic, strong, readwrite) UIButton *alternateTrailingButton;
+@property(nonatomic, strong, readwrite) KayokoHeaderCountBadgeView *countBadgeView;
 
 @end
 
@@ -51,8 +55,18 @@ static CGFloat const kKayokoTrailingHeaderButtonCenterSpacing = 44;
         [_titleLabel setTextColor:[UIColor labelColor]];
         [_titleLabel setAdjustsFontSizeToFitWidth:YES];
         [_titleLabel setMinimumScaleFactor:0.85];
+        // The title must never stretch to eat the count badge's space; the
+        // badge is the fixed element and the title yields to it.
+        [_titleLabel setContentHuggingPriority:UILayoutPriorityRequired
+                                       forAxis:UILayoutConstraintAxisHorizontal];
+        [_titleLabel setContentCompressionResistancePriority:UILayoutPriorityDefaultHigh
+                                                     forAxis:UILayoutConstraintAxisHorizontal];
         [self addSubview:_titleLabel];
         [_titleLabel setTranslatesAutoresizingMaskIntoConstraints:NO];
+
+        _countBadgeView = [[KayokoHeaderCountBadgeView alloc] init];
+        [self addSubview:_countBadgeView];
+        [_countBadgeView setTranslatesAutoresizingMaskIntoConstraints:NO];
 
         _trailingButton = [[UIButton alloc] init];
         [self addSubview:_trailingButton];
@@ -69,15 +83,26 @@ static CGFloat const kKayokoTrailingHeaderButtonCenterSpacing = 44;
         [self addSubview:_titleTapControl];
         [_titleTapControl setTranslatesAutoresizingMaskIntoConstraints:NO];
 
+        // The grabber is deliberately NOT constrained any more. It is kept as a
+        // property because the fold progress is plumbed through it during
+        // fullscreen search drags, but it has no frame and draws nothing -- see
+        // the note on `grabber` in the header.
+        [_grabber setHidden:YES];
+
         [NSLayoutConstraint activateConstraints:@[
-            [[_grabber topAnchor] constraintEqualToAnchor:[self topAnchor] constant:12],
-            [[_grabber centerXAnchor] constraintEqualToAnchor:[self centerXAnchor]],
             [[_leadingButton bottomAnchor] constraintEqualToAnchor:[self bottomAnchor] constant:-2],
             [[_leadingButton centerXAnchor] constraintEqualToAnchor:[self leadingAnchor]
                                                            constant:kKayokoLeadingHeaderButtonCenterXInset],
             [[_titleLabel centerYAnchor] constraintEqualToAnchor:[_leadingButton centerYAnchor]],
             [[_titleLabel leadingAnchor] constraintEqualToAnchor:[self leadingAnchor]
                                                         constant:kKayokoTitleLabelLeadingInset],
+            // The capsule is welded to the title's trailing edge and vertically
+            // centred on it, so the pair reads as one unit at any font size.
+            [[_countBadgeView leadingAnchor] constraintEqualToAnchor:[_titleLabel trailingAnchor]
+                                                            constant:kKayokoHeaderCountBadgeLeadingSpacing],
+            [[_countBadgeView centerYAnchor] constraintEqualToAnchor:[_titleLabel centerYAnchor]],
+            [[_countBadgeView trailingAnchor] constraintLessThanOrEqualToAnchor:[_trailingButton leadingAnchor]
+                                                                       constant:-kKayokoTitleTapControlTrailingSpacing],
             [[_trailingButton centerYAnchor] constraintEqualToAnchor:[_leadingButton centerYAnchor]],
             [[_trailingButton centerXAnchor] constraintEqualToAnchor:[self trailingAnchor]
                                                             constant:-kKayokoTrailingHeaderButtonCenterXInset],
@@ -104,6 +129,11 @@ static CGFloat const kKayokoTrailingHeaderButtonCenterSpacing = 44;
 
     [[self titleLabel] setText:title];
     [[self titleTapControl] setAccessibilityLabel:title];
+}
+
+- (void)setCountBadgeHidden:(BOOL)hidden count:(NSUInteger)count {
+    [[self countBadgeView] setHidden:hidden];
+    [[self countBadgeView] setCount:count animated:YES];
 }
 
 - (void)setGrabberFoldProgress:(CGFloat)progress {

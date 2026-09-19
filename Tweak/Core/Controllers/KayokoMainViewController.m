@@ -923,6 +923,39 @@ NS_ASSUME_NONNULL_END
     NSUInteger itemCount =
         hidesClearButton || [self storageError] ? 0 : [[[self activeListViewController] items] count];
     [[self mainView] setClearButtonEnabledForItemCount:itemCount];
+    [self updateItemCountBadgeState];
+}
+
+// The badge is the single place the header reports "how many things are in the
+// list you are looking at". It is deliberately separate from the clear button's
+// enable state: the clear button is hidden in favourites under the
+// `clearButtonMode == HistoryOnly` preference, but the count is still the truth
+// about the favourites list and should keep showing.
+//
+// Counts come from `items`, not `displayedItems`: an active search should not
+// make the header claim the list shrank.
+- (void)updateItemCountBadgeState {
+    if ([self isAuthorizationRequired] || [self storageError] || [self isShowingClearConfirmation] ||
+        ![[[self previewViewController] previewView] isHidden] ||
+        ![[[self wordSelectionViewController] view] isHidden]) {
+        [[self mainView] setItemCountBadgeHidden:YES count:0];
+        return;
+    }
+
+    NSString *historyKey = [self effectiveActiveHistoryKey];
+    KayokoHistoryListViewController *listViewController = [self listViewControllerForHistoryKey:historyKey];
+    UIView *contentView = [self contentViewForHistoryKey:historyKey];
+    BOOL showsList = contentView == [listViewController tableView];
+    BOOL showsEmptyState = contentView == [self emptyStateViewForHistoryKey:historyKey];
+    if (!showsList && !showsEmptyState) {
+        [[self mainView] setItemCountBadgeHidden:YES count:0];
+        return;
+    }
+
+    // Show the badge even at zero when the list itself is empty: "历史记录 0" is
+    // informative, it tells you the clear just worked, whereas a vanishing badge
+    // reads as a glitch.
+    [[self mainView] setItemCountBadgeHidden:NO count:[[listViewController items] count]];
 }
 
 - (void)showStorageError:(NSError *)error {
@@ -1202,10 +1235,11 @@ NS_ASSUME_NONNULL_END
 
 - (void)updateFavoritesButtonForHistoryKey:(NSString *)historyKey {
     BOOL showingFavorites = [historyKey isEqualToString:kKayokoHistoryKeyFavorites];
-    // Inactive stays an outline heart; only the active state fills and tints, so
-    // the header does not show a solid heart while you are browsing History.
-    NSString *imageName = showingFavorites ? @"heart.fill" : @"heart";
-    UIColor *tintColor = showingFavorites ? [UIColor systemPinkColor] : [UIColor labelColor];
+    // Outline star while browsing the clipboard, filled amber star once you are
+    // inside favourites. The star replaced the heart because "heart" read as a
+    // like/love affordance on a row-level action rather than a section switch.
+    NSString *imageName = showingFavorites ? @"star.fill" : @"star";
+    UIColor *tintColor = showingFavorites ? [UIColor systemYellowColor] : [UIColor labelColor];
     KayokoHeaderView *headerView = [[self mainView] headerView];
     [headerView updateStyleForButton:[headerView leadingButton]
                        withImageName:imageName
@@ -1846,6 +1880,10 @@ NS_ASSUME_NONNULL_END
     [headerViewToShow setGrabberFoldProgress:[mainHeaderView grabberFoldProgress]];
     [mainHeaderView setHidden:YES];
     [mainHeaderView setAlpha:1.0];
+    // The count belongs to the list; the preview / word-selection header has no
+    // list to count. Kept in sync here rather than in the transition callbacks
+    // so the badge is already correct when the main header slides back in.
+    [self updateItemCountBadgeState];
     [[self mainView] showContentView:viewToShow
                    transitioningView:transitionContentView
                      hideContentView:sourceTableView
@@ -1895,6 +1933,7 @@ NS_ASSUME_NONNULL_END
           [self setActiveSourceContentView:nil];
           [mainHeaderView setHidden:NO];
           [mainHeaderView setAlpha:1.0];
+          [self updateItemCountBadgeState];
         }];
 }
 
@@ -1933,6 +1972,7 @@ NS_ASSUME_NONNULL_END
           [self setActiveSourceContentView:nil];
           [mainHeaderView setHidden:NO];
           [mainHeaderView setAlpha:1.0];
+          [self updateItemCountBadgeState];
         }];
 }
 

@@ -94,11 +94,12 @@
             [self headerTrailingConstraint]
         ]];
 
-        // Outline variants for all three: a filled "heart" next to an outline
-        // "trash" made the header look like two different icon sets. Outline
-        // weights also read better against the blur when the panel is dimmed.
+        // The leading button is the shortcut into Favorites. It used to be a
+        // heart, which read as "like this item" rather than "go to favourites";
+        // a star makes the two states unmistakable -- outlined star when
+        // browsing the clipboard, filled amber star once you are in favourites.
         [[self headerView] updateStyleForButton:[[self headerView] leadingButton]
-                                  withImageName:@"heart"
+                                  withImageName:@"star"
                                       imageSize:kKayokoFavoritesButtonImageSize
                                       tintColor:[UIColor labelColor]];
         [[self headerView] updateStyleForButton:[[self headerView] trailingButton]
@@ -352,6 +353,10 @@
     BOOL enabled = itemCount > 0;
     [[[self headerView] trailingButton] setEnabled:enabled];
     [[[self headerView] trailingButton] setAlpha:enabled ? 1.0 : 0.35];
+}
+
+- (void)setItemCountBadgeHidden:(BOOL)hidden count:(NSUInteger)count {
+    [[self headerView] setCountBadgeHidden:hidden count:count];
 }
 
 #pragma mark - Content Transitions
