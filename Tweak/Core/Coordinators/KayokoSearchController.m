@@ -25,7 +25,7 @@ NS_ASSUME_NONNULL_BEGIN
                                       KayokoSearchTokenListViewControllerDelegate>
 #pragma mark - Presentation
 
-@property(nonatomic, strong) KayokoSearchPresentationController *presentationController;
+@property(nonatomic, strong, readwrite) KayokoSearchPresentationController *presentationController;
 @property(nonatomic, weak) KayokoHistoryListViewController *historyListViewController;
 @property(nonatomic, weak) KayokoHistoryListViewController *favoritesListViewController;
 @property(nonatomic, strong) UISearchBar *historySearchBar;

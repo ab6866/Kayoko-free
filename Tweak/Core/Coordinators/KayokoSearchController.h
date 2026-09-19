@@ -11,6 +11,7 @@
 @class KayokoHeaderView;
 @class KayokoHistoryListViewController;
 @class KayokoHistoryListView;
+@class KayokoSearchPresentationController;
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -34,6 +35,10 @@ NS_ASSUME_NONNULL_BEGIN
 @property(nonatomic, assign) BOOL keepsSearchBarVisible;
 @property(nonatomic, assign, readonly, getter=isSearchActive) BOOL searchActive;
 @property(nonatomic, assign, readonly) CGFloat keyboardBottomInset;
+// Exposed so the panel can drive the "应用 / 类别 / 备注" strip that lives in the
+// search header. The strip is presentation state, not search state, so it is
+// addressed through the presentation controller rather than mirrored here.
+@property(nonatomic, strong, readonly) KayokoSearchPresentationController *presentationController;
 
 - (instancetype)initWithContainerView:(UIView *)containerView
                            headerView:(KayokoHeaderView *)headerView
