@@ -22,6 +22,7 @@
 #import "KayokoPreviewView.h"
 #import "KayokoPreviewViewController.h"
 #import "KayokoSearchController.h"
+#import "KayokoSearchPresentationController.h"
 #import "KayokoTableViewCell.h"
 #import "KayokoTagCatalog.h"
 #import "KayokoWordSelectionView.h"
