@@ -138,10 +138,7 @@ NS_ASSUME_NONNULL_END
                    previewLineCount:previewLineCount
                     itemDetailsMode:itemDetailsMode
                      showIconAndTime:NO
-                         showsBoldText:NO
-                       showApplication:YES
-                         showCategory:YES
-                             showNote:YES
+                       showsBoldText:NO
                          searchText:nil];
 }
 
@@ -153,10 +150,7 @@ NS_ASSUME_NONNULL_END
                    previewLineCount:previewLineCount
                     itemDetailsMode:itemDetailsMode
                      showIconAndTime:showIconAndTime
-                         showsBoldText:NO
-                       showApplication:YES
-                         showCategory:YES
-                             showNote:YES
+                       showsBoldText:NO
                          searchText:nil];
 }
 
@@ -170,9 +164,6 @@ NS_ASSUME_NONNULL_END
                     itemDetailsMode:itemDetailsMode
                      showIconAndTime:showIconAndTime
                        showsBoldText:showsBoldText
-                     showApplication:YES
-                       showCategory:YES
-                           showNote:YES
                          searchText:nil];
 }
 
@@ -181,9 +172,6 @@ NS_ASSUME_NONNULL_END
                                    itemDetailsMode:(KayokoItemDetailsMode)itemDetailsMode
                                     showIconAndTime:(BOOL)showIconAndTime
                                       showsBoldText:(BOOL)showsBoldText
-                                    showApplication:(BOOL)showApplication
-                                      showCategory:(BOOL)showCategory
-                                          showNote:(BOOL)showNote
                                         searchText:(nullable NSString *)searchText {
     KayokoTableViewCellContent *content = [[KayokoTableViewCellContent alloc] init];
     NSString *bundleIdentifier = [item bundleIdentifier];
@@ -194,27 +182,27 @@ NS_ASSUME_NONNULL_END
     NSString *noteText = [[item note] length] > 0 ? [item note] : nil;
     KayokoTag *tag = [[KayokoTagCatalog sharedCatalog] tagForUUID:[item tagUUID]];
     NSString *categoryName = [[tag title] length] > 0 ? [tag title] : nil;
+    // The row is the item's own content, as before: a note replaces the source
+    // app name as the title, and the icon and the tag dot are always drawn. The
+    // 应用 / 类别 / 备注 switches moved out of the row entirely and now drive the
+    // strip under the search bar, so they no longer change anything here.
     NSString *displayName = nil;
-    if (showNote && noteText) {
+    if (noteText) {
         displayName = noteText;
-    } else if (showApplication && [sourceDisplayName length] > 0) {
+    } else if ([sourceDisplayName length] > 0) {
         displayName = sourceDisplayName;
     } else {
-        // Keep a stable, non-empty title when both metadata switches are off.
-        // This prevents an empty header from collapsing the text-column layout.
         displayName = [[KayokoPasteboardManager localizationBundle]
             localizedStringForKey:@"Clipboard Item"
                             value:@"Clipboard Item"
                             table:@"Tweak"];
     }
-    [content setIcon:showApplication ? [[self metadataProvider] iconForBundleIdentifier:bundleIdentifier] : nil];
+    [content setIcon:[[self metadataProvider] iconForBundleIdentifier:bundleIdentifier]];
     [content setDisplayName:displayName ?: @""];
     [content setApplicationName:sourceDisplayName];
     [content setCategoryName:categoryName];
     [content setNoteText:noteText];
-    [content setAttributedDisplayName:(showNote && noteText) ? [self attributedTextForText:displayName
-                                                                                       searchText:searchText]
-                                                               : nil];
+    [content setAttributedDisplayName:noteText ? [self attributedTextForText:displayName searchText:searchText] : nil];
 
     // When "Show Time" is on, the capture time is drawn under the app icon and
     // the date is drawn at the trailing edge, so the relative time is dropped
@@ -229,7 +217,7 @@ NS_ASSUME_NONNULL_END
     [content setTimestampDateText:headerTimestampDateText];
     [content setShowsBoldText:showsBoldText];
 
-    [content setTagHexColor:showCategory ? [tag hexColor] : nil];
+    [content setTagHexColor:[tag hexColor]];
     [content setContentText:contentText];
     [content setAttributedContentText:[self attributedTextForText:contentText searchText:searchText]];
     BOOL showsDetail =

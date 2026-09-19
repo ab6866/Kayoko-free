@@ -31,9 +31,6 @@ NS_ASSUME_NONNULL_BEGIN
                                    itemDetailsMode:(KayokoItemDetailsMode)itemDetailsMode
                                     showIconAndTime:(BOOL)showIconAndTime
                                       showsBoldText:(BOOL)showsBoldText
-                                    showApplication:(BOOL)showApplication
-                                      showCategory:(BOOL)showCategory
-                                          showNote:(BOOL)showNote
                                         searchText:(nullable NSString *)searchText;
 
 - (void)loadThumbnailForItem:(KayokoPasteboardItem *)item

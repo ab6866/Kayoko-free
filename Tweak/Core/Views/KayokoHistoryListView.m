@@ -448,22 +448,20 @@ NS_ASSUME_NONNULL_END
     [self reloadData];
 }
 
+// 应用 / 类别 / 备注 moved off the rows and onto the strip under the search
+// bar, so flipping any of them no longer has to rebuild the list. The
+// properties are kept because the search header reads them to decide what the
+// strip should show -- the no-op guard keeps the call sites cheap.
 - (void)setShowApplication:(BOOL)showApplication {
-    if (_showApplication == showApplication) return;
     _showApplication = showApplication;
-    [self reloadData];
 }
 
 - (void)setShowCategory:(BOOL)showCategory {
-    if (_showCategory == showCategory) return;
     _showCategory = showCategory;
-    [self reloadData];
 }
 
 - (void)setShowNote:(BOOL)showNote {
-    if (_showNote == showNote) return;
     _showNote = showNote;
-    [self reloadData];
 }
 
 - (void)updateRowHeightForCurrentDisplayOptions {

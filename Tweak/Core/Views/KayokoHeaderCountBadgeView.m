@@ -9,11 +9,12 @@
 // baseline without competing with it: at 22pt the title still owns the row, and
 // the capsule reads as a footnote pinned to it.
 static CGFloat const kKayokoHeaderCountBadgeFontSize = 12;
-static CGFloat const kKayokoHeaderCountBadgeHorizontalPadding = 7;
-static CGFloat const kKayokoHeaderCountBadgeVerticalPadding = 2.5;
-// Below this the row would be a hairline; above it the capsule starts to look
-// like a button. 18pt is a comfortable iOS footnote pill.
-static CGFloat const kKayokoHeaderCountBadgeMinimumHeight = 18;
+static CGFloat const kKayokoHeaderCountBadgeHorizontalPadding = 6.5;
+static CGFloat const kKayokoHeaderCountBadgeVerticalPadding = 2;
+// A 16pt pill is the tightest shape that still reads as a capsule rather than a
+// mis-rendered dot at 12pt text. Anything taller started to look like a button,
+// which is exactly the wrong affordance now that the capsule is a read-out.
+static CGFloat const kKayokoHeaderCountBadgeMinimumHeight = 16;
 
 @implementation KayokoHeaderCountBadgeView
 
@@ -23,16 +24,27 @@ static CGFloat const kKayokoHeaderCountBadgeMinimumHeight = 18;
         [self setUserInteractionEnabled:NO];
         // The blur behind the panel is light in some styles and dark in others,
         // so a fill that is always "one step away from the background" is the
-        // only way the capsule stays visible in both. `tertiarySystemFillColor`
-        // is exactly that: a translucent label-tinted wash.
-        [self setBackgroundColor:[UIColor tertiarySystemFillColor]];
+        // only way the capsule stays visible in both.
+        //
+        // A flat wash of `tertiarySystemFillColor` looked like a widget with a
+        // missing glyph: too pale against a light blur to hold the digits, and
+        // the muted label colour on top of it washed the number out further.
+        // A thin stroke plus a solid-enough fill gives the capsule a defined
+        // edge without turning it into a control, and the text colour tracks the
+        // primary label so the count stays the most legible thing in the pill.
+        [self setBackgroundColor:[UIColor colorWithDynamicProvider:^UIColor *(UITraitCollection *traitCollection) {
+          if ([traitCollection userInterfaceStyle] == UIUserInterfaceStyleDark) {
+              return [UIColor colorWithWhite:1 alpha:0.16];
+          }
+
+          return [UIColor colorWithWhite:0 alpha:0.09];
+        }]];
         [[self layer] setCornerCurve:kCACornerCurveContinuous];
+        [[self layer] setBorderWidth:0.5];
+        [self updateBorderColor];
         [self setClipsToBounds:YES];
 
         _countLabel = [[UILabel alloc] init];
-        // Medium, not bold: the title is Semibold, and matching weight would
-        // make the count look like a second title. Medium keeps it legible at
-        // 12pt while staying visibly subordinate.
         [_countLabel setFont:[UIFont monospacedDigitSystemFontOfSize:kKayokoHeaderCountBadgeFontSize
                                                               weight:UIFontWeightSemibold]];
         [_countLabel setTextColor:[UIColor secondaryLabelColor]];
@@ -57,6 +69,26 @@ static CGFloat const kKayokoHeaderCountBadgeMinimumHeight = 18;
         [self setCount:0];
     }
     return self;
+}
+
+// CGColor is not dynamic, so the hairline has to be re-resolved whenever the
+// interface style changes instead of once at init.
+- (void)updateBorderColor {
+    UIColor *borderColor = [UIColor colorWithDynamicProvider:^UIColor *(UITraitCollection *traitCollection) {
+      if ([traitCollection userInterfaceStyle] == UIUserInterfaceStyleDark) {
+          return [UIColor colorWithWhite:1 alpha:0.14];
+      }
+
+      return [UIColor colorWithWhite:0 alpha:0.08];
+    }];
+    [[self layer] setBorderColor:[[borderColor resolvedColorWithTraitCollection:[self traitCollection]] CGColor]];
+}
+
+- (void)traitCollectionDidChange:(UITraitCollection *)previousTraitCollection {
+    [super traitCollectionDidChange:previousTraitCollection];
+    if ([self.traitCollection hasDifferentColorAppearanceComparedToTraitCollection:previousTraitCollection]) {
+        [self updateBorderColor];
+    }
 }
 
 - (void)layoutSubviews {

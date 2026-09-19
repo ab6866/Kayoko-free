@@ -30,6 +30,11 @@ NS_ASSUME_NONNULL_BEGIN
             didMoveItemDictionary:(NSDictionary<NSString *, id> *)dictionary
                fromHistoryWithKey:(NSString *)sourceHistoryKey
                  toHistoryWithKey:(NSString *)destinationHistoryKey;
+// The row at the top of the visible list. The controller pushes it so the
+// "应用 / 类别 / 备注" strip under the search bar can describe something concrete
+// without the list having to own that view.
+- (void)historyListViewController:(KayokoHistoryListViewController *)controller
+     didSelectSearchInfoStripItem:(nullable KayokoPasteboardItem *)item;
 
 @end
 
@@ -53,6 +58,10 @@ NS_ASSUME_NONNULL_BEGIN
 @property(nonatomic, assign) BOOL showApplication;
 @property(nonatomic, assign) BOOL showCategory;
 @property(nonatomic, assign) BOOL showNote;
+// The row currently described by the search info strip, plus its y offset so a
+// row further up the list can take the strip over as it is laid out.
+@property(nonatomic, strong, nullable) KayokoPasteboardItem *searchInfoStripItem;
+@property(nonatomic, assign) CGFloat searchInfoStripItemRowTop;
 
 - (instancetype)initWithName:(NSString *)name historyKey:(NSString *)historyKey NS_DESIGNATED_INITIALIZER;
 - (instancetype)initWithNibName:(nullable NSString *)nibNameOrNil

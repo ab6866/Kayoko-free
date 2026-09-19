@@ -434,7 +434,11 @@ static CGFloat const kKayokoTableViewCellTitleContentSpacing = 5;
             fallbackConstraints = @[ [[[self headerLabel] topAnchor] constraintGreaterThanOrEqualToAnchor:[self topAnchor]
                                                                                                  constant:8] ];
         } else {
-            fallbackConstraints = @[ [[[self headerLabel] centerYAnchor] constraintEqualToAnchor:[self centerYAnchor]] ];
+            // Image-only row: there is no preview and no detail line, so the
+            // title is the whole text column. It must still ride the icon's top
+            // edge rather than float to the cell's vertical centre.
+            fallbackConstraints = @[ [[[self headerLabel] topAnchor] constraintEqualToAnchor:[self topAnchor]
+                                                                                   constant:12] ];
         }
         for (NSLayoutConstraint *constraint in fallbackConstraints) {
             [constraint setPriority:UILayoutPriorityDefaultHigh];
@@ -467,10 +471,16 @@ static CGFloat const kKayokoTableViewCellTitleContentSpacing = 5;
             [iconColumnBottomAnchor constraintLessThanOrEqualToAnchor:[self bottomAnchor] constant:-6]
         ]];
 
-        // The title and preview/detail are one text block. Centre that whole
-        // block on the midpoint of the icon + time group, rather than aligning
-        // the preview to the icon's bottom edge. This keeps long previews and
-        // detail text visually balanced against the left column.
+        // The title is pinned to the icon's TOP edge; the preview/detail block
+        // then hangs underneath it and its own trailing edge is only bounded,
+        // not positioned. That is the requested reading order: 标题跟图标顶端对齐,
+        // 内容顺着往下排.
+        //
+        // Centring the text block on the left column (the previous behaviour)
+        // made a one-line item and a three-line item sit at different heights
+        // relative to the icon, so the title never lined up with the icon in a
+        // scanned list -- and for an image-only row it floated to the vertical
+        // centre of the cell, which is what looked broken.
         NSLayoutYAxisAnchor *textBottomAnchor =
             showsDetail ? [[self detailLabel] bottomAnchor]
                         : (hasContentText ? [[self contentLabel] bottomAnchor] : [[self headerLabel] bottomAnchor]);
@@ -478,19 +488,29 @@ static CGFloat const kKayokoTableViewCellTitleContentSpacing = 5;
         [self addLayoutGuide:textColumnGuide];
         [NSLayoutConstraint activateConstraints:@[
             [[textColumnGuide topAnchor] constraintEqualToAnchor:[[self headerLabel] topAnchor]],
-            [[textColumnGuide bottomAnchor] constraintEqualToAnchor:textBottomAnchor],
-            [[textColumnGuide centerYAnchor] constraintEqualToAnchor:[iconColumnGuide centerYAnchor]]
+            [[textColumnGuide bottomAnchor] constraintGreaterThanOrEqualToAnchor:textBottomAnchor]
+        ]];
+
+        // The title hangs off the icon's top edge -- `kKayokoTableViewCellTitleIconOpticalOffset`
+        // keeps it optically level with the icon's rounded corner instead of its
+        // bounding box.
+        [NSLayoutConstraint activateConstraints:@[ [[[self headerLabel] topAnchor]
+                                                    constraintEqualToAnchor:[[self iconImageView] topAnchor]
+                                                                   constant:-kKayokoTableViewCellTitleIconOpticalOffset] ]];
+
+        // Everything below the title is only bounded from underneath: the block
+        // keeps its intrinsic order and the remaining slack falls to the bottom
+        // of the cell, which keeps the preview roughly where it already was
+        // instead of re-spacing the whole column.
+        [NSLayoutConstraint activateConstraints:@[
+            [textBottomAnchor constraintLessThanOrEqualToAnchor:[self bottomAnchor] constant:-6]
         ]];
 
         // Keep the old optical alignment as a soft fallback for very short or
-        // temporarily incomplete cells. The guide above is the source of truth
-        // and wins whenever the complete text block is present.
+        // temporarily incomplete cells. Only the content-edge half survives:
+        // the title-top pin is now a required constraint above, because it IS
+        // the alignment the row is built around.
         NSMutableArray<NSLayoutConstraint *> *iconAlignedConstraints = [NSMutableArray array];
-        NSLayoutConstraint *titleTopConstraint =
-            [[[self headerLabel] topAnchor] constraintEqualToAnchor:[[self iconImageView] topAnchor]
-                                                           constant:-kKayokoTableViewCellTitleIconOpticalOffset];
-        [titleTopConstraint setPriority:UILayoutPriorityDefaultLow];
-        [iconAlignedConstraints addObject:titleTopConstraint];
         if (textBottomAnchor != [[self headerLabel] bottomAnchor]) {
             NSLayoutConstraint *contentBottomConstraint =
                 [textBottomAnchor constraintEqualToAnchor:[[self iconImageView] bottomAnchor]
@@ -502,8 +522,7 @@ static CGFloat const kKayokoTableViewCellTitleContentSpacing = 5;
 
         // Hard bounds: the text block may never leave the cell.
         [NSLayoutConstraint activateConstraints:@[
-            [[[self headerLabel] topAnchor] constraintGreaterThanOrEqualToAnchor:[self topAnchor] constant:6],
-            [textBottomAnchor constraintLessThanOrEqualToAnchor:[self bottomAnchor] constant:-6]
+            [[[self headerLabel] topAnchor] constraintGreaterThanOrEqualToAnchor:[self topAnchor] constant:6]
         ]];
 
         [self applyContent:content];

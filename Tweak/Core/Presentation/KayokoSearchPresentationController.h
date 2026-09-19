@@ -10,6 +10,8 @@
 @class KayokoHistoryListView;
 @class KayokoHeaderView;
 @class KayokoSearchPresentationController;
+@class KayokoPasteboardItem;
+@class KayokoApplicationMetadataProvider;
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -29,6 +31,18 @@ NS_ASSUME_NONNULL_BEGIN
 @property(nonatomic, assign) BOOL keepsSearchBarVisible;
 @property(nonatomic, assign, readonly, getter=isSearchActive) BOOL searchActive;
 @property(nonatomic, assign, readonly) CGFloat keyboardBottomInset;
+// Shared with the search controller so the strip's app icon and display name
+// reuse the same SpringBoard-backed cache rather than building a second one.
+@property(nonatomic, strong, nullable) KayokoApplicationMetadataProvider *metadataProvider;
+
+// The "应用 / 类别 / 备注" line under the search bar. Called with the current
+// preference values; the header only grows while at least one of them is on.
+- (void)setShowsApplicationInSearchInfoStrip:(BOOL)showsApplication
+                                 showsCategory:(BOOL)showsCategory
+                                     showsNote:(BOOL)showsNote;
+// The row the strip should describe. Pass nil to clear it.
+- (void)setSearchInfoStripItem:(nullable KayokoPasteboardItem *)item
+                  forTableView:(nullable KayokoHistoryListView *)tableView;
 
 - (instancetype)initWithContainerView:(UIView *)containerView
                            headerView:(KayokoHeaderView *)headerView

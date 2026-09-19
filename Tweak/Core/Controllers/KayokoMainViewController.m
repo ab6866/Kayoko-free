@@ -103,8 +103,6 @@ NS_ASSUME_NONNULL_BEGIN
 @property(nonatomic, assign) CGRect noteEditingOriginalPanelFrame;
 @property(nonatomic, assign) NSTimeInterval noteEditingKeyboardAnimationDuration;
 @property(nonatomic, assign) UIViewAnimationOptions noteEditingKeyboardAnimationOptions;
-- (UIMenu *)countBadgeMenu;
-- (void)updatePreferenceBoolValue:(BOOL)value forKey:(NSString *)key;
 @end
 
 NS_ASSUME_NONNULL_END
@@ -157,10 +155,8 @@ NS_ASSUME_NONNULL_END
                   forControlEvents:UIControlEventTouchUpInside];
         // The star remains a plain TouchUpInside switch. Do not attach a
         // UIButton menu here: UIKit would make a long press open the menu and
-        // can deliver an extra touch-up after the menu is dismissed.
-        UIButton *countBadgeControl = [[_mainView headerView] countBadgeControl];
-        [countBadgeControl setMenu:[self countBadgeMenu]];
-        [countBadgeControl setShowsMenuAsPrimaryAction:YES];
+        // can deliver an extra touch-up after the menu is dismissed. The same
+        // rule applies to the count capsule -- it is a read-out, not a control.
         [[[_mainView headerView] trailingButton] addTarget:self
                                                     action:@selector(handleClearButtonPressed)
                                           forControlEvents:UIControlEventTouchUpInside];
@@ -335,112 +331,42 @@ NS_ASSUME_NONNULL_END
     _showBoldText = showBoldText;
     [[self historyListViewController] setShowBoldText:showBoldText];
     [[self favoritesListViewController] setShowBoldText:showBoldText];
-    [[[self mainView] headerView] countBadgeControl].menu = [self countBadgeMenu];
 }
 
 - (void)setKeepSearchVisible:(BOOL)keepSearchVisible {
     _keepSearchVisible = keepSearchVisible;
     [[self searchController] setKeepsSearchBarVisible:keepSearchVisible];
-    [[[self mainView] headerView] countBadgeControl].menu = [self countBadgeMenu];
 }
 
 - (void)setShowApplication:(BOOL)showApplication {
     _showApplication = showApplication;
     [[self historyListViewController] setShowApplication:showApplication];
     [[self favoritesListViewController] setShowApplication:showApplication];
-    [[[self mainView] headerView] countBadgeControl].menu = [self countBadgeMenu];
+    [self updateSearchInfoStripVisibility];
 }
 
 - (void)setShowCategory:(BOOL)showCategory {
     _showCategory = showCategory;
     [[self historyListViewController] setShowCategory:showCategory];
     [[self favoritesListViewController] setShowCategory:showCategory];
-    [[[self mainView] headerView] countBadgeControl].menu = [self countBadgeMenu];
+    [self updateSearchInfoStripVisibility];
 }
 
 - (void)setShowNote:(BOOL)showNote {
     _showNote = showNote;
     [[self historyListViewController] setShowNote:showNote];
     [[self favoritesListViewController] setShowNote:showNote];
-    [[[self mainView] headerView] countBadgeControl].menu = [self countBadgeMenu];
+    [self updateSearchInfoStripVisibility];
 }
 
-- (void)updatePreferenceBoolValue:(BOOL)value forKey:(NSString *)key {
-    NSUserDefaults *defaults = [[NSUserDefaults alloc] initWithSuiteName:kKayokoPreferencesIdentifier];
-    [defaults setBool:value forKey:key];
-    [defaults synchronize];
-    CFNotificationCenterPostNotification(CFNotificationCenterGetDarwinNotifyCenter(),
-                                          (__bridge CFStringRef)kKayokoNotificationKeyPreferencesReload,
-                                          NULL,
-                                          NULL,
-                                          YES);
-}
-
-- (UIMenu *)countBadgeMenu {
-    __weak typeof(self) weakSelf = self;
-    // The quick menu is intentionally Chinese regardless of the system
-    // language, matching the requested in-panel settings surface.
-    UIAction *boldAction = [UIAction actionWithTitle:@"字体加粗"
-                                                image:[UIImage systemImageNamed:@"bold"]
-                                           identifier:nil
-                                              handler:^(__unused UIAction *action) {
-      __strong typeof(weakSelf) strongSelf = weakSelf;
-      if (!strongSelf) return;
-      BOOL value = ![strongSelf showBoldText];
-      [strongSelf setShowBoldText:value];
-      [strongSelf updatePreferenceBoolValue:value forKey:kKayokoPreferenceKeyShowBoldText];
-    }];
-    [boldAction setState:[self showBoldText] ? UIMenuElementStateOn : UIMenuElementStateOff];
-
-    UIAction *keepAction = [UIAction actionWithTitle:@"固定搜索栏"
-                                                image:[UIImage systemImageNamed:@"pin"]
-                                           identifier:nil
-                                              handler:^(__unused UIAction *action) {
-      __strong typeof(weakSelf) strongSelf = weakSelf;
-      if (!strongSelf) return;
-      BOOL value = ![strongSelf keepSearchVisible];
-      [strongSelf setKeepSearchVisible:value];
-      [strongSelf updatePreferenceBoolValue:value forKey:kKayokoPreferenceKeyKeepSearchVisible];
-    }];
-    [keepAction setState:[self keepSearchVisible] ? UIMenuElementStateOn : UIMenuElementStateOff];
-
-    UIAction *applicationAction = [UIAction actionWithTitle:@"应用"
-                                                       image:[UIImage systemImageNamed:@"app"]
-                                                  identifier:nil
-                                                     handler:^(__unused UIAction *action) {
-      __strong typeof(weakSelf) strongSelf = weakSelf;
-      if (!strongSelf) return;
-      BOOL value = ![strongSelf showApplication];
-      [strongSelf setShowApplication:value];
-      [strongSelf updatePreferenceBoolValue:value forKey:kKayokoPreferenceKeyShowApplication];
-    }];
-    [applicationAction setState:[self showApplication] ? UIMenuElementStateOn : UIMenuElementStateOff];
-
-    UIAction *categoryAction = [UIAction actionWithTitle:@"类别"
-                                                    image:[UIImage systemImageNamed:@"tag"]
-                                               identifier:nil
-                                                  handler:^(__unused UIAction *action) {
-      __strong typeof(weakSelf) strongSelf = weakSelf;
-      if (!strongSelf) return;
-      BOOL value = ![strongSelf showCategory];
-      [strongSelf setShowCategory:value];
-      [strongSelf updatePreferenceBoolValue:value forKey:kKayokoPreferenceKeyShowCategory];
-    }];
-    [categoryAction setState:[self showCategory] ? UIMenuElementStateOn : UIMenuElementStateOff];
-
-    UIAction *noteAction = [UIAction actionWithTitle:@"备注"
-                                                image:[UIImage systemImageNamed:@"note.text"]
-                                           identifier:nil
-                                              handler:^(__unused UIAction *action) {
-      __strong typeof(weakSelf) strongSelf = weakSelf;
-      if (!strongSelf) return;
-      BOOL value = ![strongSelf showNote];
-      [strongSelf setShowNote:value];
-      [strongSelf updatePreferenceBoolValue:value forKey:kKayokoPreferenceKeyShowNote];
-    }];
-    [noteAction setState:[self showNote] ? UIMenuElementStateOn : UIMenuElementStateOff];
-
-    return [UIMenu menuWithTitle:@"" children:@[boldAction, keepAction, applicationAction, categoryAction, noteAction]];
+// The three metadata switches no longer rewrite the row title or its icon. They
+// now control a single line of context directly under the search bar, so toggling
+// one grows or shrinks the search header instead of rebuilding every cell.
+- (void)updateSearchInfoStripVisibility {
+    [[[self searchController] presentationController]
+        setShowsApplicationInSearchInfoStrip:[self showApplication]
+                                showsCategory:[self showCategory]
+                                    showsNote:[self showNote]];
 }
 
 - (void)setClearButtonMode:(KayokoClearButtonMode)clearButtonMode {
@@ -753,6 +679,12 @@ NS_ASSUME_NONNULL_END
     [self handlePasteboardItemDictionary:dictionary
                      movedFromHistoryKey:sourceHistoryKey
                             toHistoryKey:destinationHistoryKey];
+}
+
+- (void)historyListViewController:(KayokoHistoryListViewController *)controller
+     didSelectSearchInfoStripItem:(KayokoPasteboardItem *)item {
+    [[[self searchController] presentationController] setSearchInfoStripItem:item
+                                                               forTableView:[controller tableView]];
 }
 
 #pragma mark - Content Lookup

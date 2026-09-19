@@ -178,9 +178,6 @@ NS_ASSUME_NONNULL_END
                                                                              itemDetailsMode:[self itemDetailsMode]
                                                                               showIconAndTime:[self showIconAndTime]
                                                                                 showsBoldText:[self showBoldText]
-                                                                              showApplication:[self showApplication]
-                                                                                showCategory:[self showCategory]
-                                                                                    showNote:[self showNote]
                                                                                   searchText:[self searchText]];
         KayokoTableViewCell *cell = (KayokoTableViewCell *)[[self tableView] cellForRowAtIndexPath:indexPath];
         [cell applyDetailContent:content];
@@ -715,9 +712,6 @@ NS_ASSUME_NONNULL_END
                                                                          itemDetailsMode:[self itemDetailsMode]
                                                                           showIconAndTime:[self showIconAndTime]
                                                                             showsBoldText:[self showBoldText]
-                                                                          showApplication:[self showApplication]
-                                                                            showCategory:[self showCategory]
-                                                                                showNote:[self showNote]
                                                                               searchText:[self searchText]];
 
     KayokoTableViewCell *cell =
@@ -757,9 +751,6 @@ NS_ASSUME_NONNULL_END
                                                                          itemDetailsMode:[self itemDetailsMode]
                                                                           showIconAndTime:[self showIconAndTime]
                                                                             showsBoldText:[self showBoldText]
-                                                                          showApplication:[self showApplication]
-                                                                            showCategory:[self showCategory]
-                                                                                showNote:[self showNote]
                                                                               searchText:[self searchText]];
     NSString *reuseIdentifier = [KayokoTableViewCell reuseIdentifierForContent:content];
     KayokoTableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:reuseIdentifier];
@@ -789,6 +780,19 @@ NS_ASSUME_NONNULL_END
     NSString *hiddenContent = [self presentationHiddenItemContent];
     BOOL hidesCell = [hiddenContent length] > 0 && [dictionary[kKayokoItemKeyContent] isEqualToString:hiddenContent];
     [cell setHidden:hidesCell];
+
+    // The strip under the search bar describes one row, so it always answers
+    // "what am I about to paste?" without the user opening the preview. Rows are
+    // laid out top-down, so the first non-hidden row to draw is the topmost one
+    // on screen and it owns the strip until a higher row is laid out.
+    if (!hidesCell) {
+        CGFloat rowTop = CGRectGetMinY([tableView rectForRowAtIndexPath:indexPath]);
+        if (![self searchInfoStripItem] || rowTop < [self searchInfoStripItemRowTop]) {
+            [self setSearchInfoStripItem:[KayokoPasteboardItem itemFromDictionary:dictionary]];
+            [self setSearchInfoStripItemRowTop:rowTop];
+            [[self delegate] historyListViewController:self didSelectSearchInfoStripItem:[self searchInfoStripItem]];
+        }
+    }
 }
 
 - (void)tableView:(UITableView *)tableView

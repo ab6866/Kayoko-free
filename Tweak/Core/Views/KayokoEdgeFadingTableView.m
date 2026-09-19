@@ -68,6 +68,14 @@
     [[self edgeFadeMaskController] setLeadingFadeScrollOffset:edgeFadeLeadingScrollOffset];
 }
 
+- (UIEdgeInsets)edgeFadeInsets {
+    return [[self edgeFadeMaskController] edgeInsets];
+}
+
+- (void)setEdgeFadeInsets:(UIEdgeInsets)edgeFadeInsets {
+    [[self edgeFadeMaskController] setEdgeInsets:edgeFadeInsets];
+}
+
 - (KayokoEdgeFadeAxis)edgeFadeAxis {
     return [[self edgeFadeMaskController] axis];
 }

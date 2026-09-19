@@ -97,6 +97,15 @@ NS_ASSUME_NONNULL_END
                                                            favoritesTableView:[favoritesListViewController tableView]
                                                          panGestureRecognizer:panGestureRecognizer];
         [_presentationController setDelegate:self];
+        // The strip below the search bar needs the same metadata cache the token
+        // list uses; building a second one would double the SpringBoard lookups.
+        [_presentationController setMetadataProvider:_metadataProvider];
+        // Seed the strip from the list's own switch state, which by now already
+        // reflects the saved preferences.
+        [_presentationController
+            setShowsApplicationInSearchInfoStrip:[historyListViewController showApplication]
+                                    showsCategory:[historyListViewController showCategory]
+                                        showsNote:[historyListViewController showNote]];
 
         [self attachToListViewController:historyListViewController hidesSearchBar:YES];
         [[NSNotificationCenter defaultCenter] addObserver:self

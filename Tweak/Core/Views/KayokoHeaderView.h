@@ -24,9 +24,6 @@ static CGFloat const kKayokoHeaderContentSpacing = 8;
 // It is nil-free by construction: the badge exists for every header, it is only
 // hidden when there is nothing meaningful to show.
 @property(nonatomic, strong, readonly) KayokoHeaderCountBadgeView *countBadgeView;
-// Transparent interaction surface for the count capsule menu. The badge itself
-// remains a render-only view so it cannot swallow or compete with taps.
-@property(nonatomic, strong, readonly) UIButton *countBadgeControl;
 @property(nonatomic, assign) CGFloat grabberFoldProgress;
 
 + (CGFloat)preferredHeight;

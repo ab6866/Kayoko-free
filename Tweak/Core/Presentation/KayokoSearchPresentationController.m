@@ -9,6 +9,7 @@
 #import "KayokoHistoryListView.h"
 #import "KayokoMainView.h"
 #import "KayokoSearchBar.h"
+#import "KayokoSearchInfoStripView.h"
 
 static CGFloat const kKayokoSearchHeaderHeight = 56;
 static CGFloat const kKayokoSearchBarHorizontalInset = 16;
@@ -54,6 +55,24 @@ NS_ASSUME_NONNULL_BEGIN
 @property(nonatomic, weak) UIView *favoritesSearchTokenView;
 @property(nonatomic, strong) UIView *historySearchHeaderView;
 @property(nonatomic, strong) UIView *favoritesSearchHeaderView;
+
+#pragma mark - Search Info Strip
+
+// The optional "应用 / 类别 / 备注" line that sits between the search bar and
+// the token list. It is owned per table view, and it is only present in the
+// header height while at least one of the three switches is on.
+@property(nonatomic, strong, nullable) KayokoSearchInfoStripView *historySearchInfoStripView;
+@property(nonatomic, strong, nullable) KayokoSearchInfoStripView *favoritesSearchInfoStripView;
+
+#pragma mark - Search Info Strip State
+
+@property(nonatomic, assign) BOOL showsApplicationInSearchInfoStrip;
+@property(nonatomic, assign) BOOL showsCategoryInSearchInfoStrip;
+@property(nonatomic, assign) BOOL showsNoteInSearchInfoStrip;
+// The item each strip is currently describing. It follows the selected row, so
+// the strip answers "what am I about to paste?" without leaving the list.
+@property(nonatomic, strong, nullable) KayokoPasteboardItem *historySearchInfoStripItem;
+@property(nonatomic, strong, nullable) KayokoPasteboardItem *favoritesSearchInfoStripItem;
 
 #pragma mark - Lists
 
@@ -162,18 +181,34 @@ NS_ASSUME_NONNULL_END
     CGFloat width = CGRectGetWidth([tableView bounds]);
     UIView *tokenView = [self searchTokenViewForTableView:tableView];
     CGFloat tokenHeight = (tokenView && ![tokenView isHidden]) ? CGRectGetHeight([tokenView frame]) : 0;
-    CGFloat headerHeight = kKayokoSearchHeaderHeight + tokenHeight;
+    KayokoSearchInfoStripView *infoStripView = [self infoStripViewForTableView:tableView];
+    CGFloat infoStripHeight = infoStripView ? CGRectGetHeight([infoStripView frame]) : 0;
+    // Order below the search bar: search bar -> info strip -> search tokens.
+    // The strip is deliberately the FIRST thing under the bar so the three
+    // metadata switches read as a subtitle of the field, not as another row of
+    // results.
+    CGFloat stripOffsetY = kKayokoSearchHeaderHeight;
+    CGFloat tokenOffsetY = kKayokoSearchHeaderHeight + infoStripHeight;
+    CGFloat headerHeight = tokenOffsetY + tokenHeight;
     CGRect headerFrame = CGRectMake(0, 0, width, headerHeight);
     CGRect searchBarFrame = CGRectMake(0, 0, width, kKayokoSearchHeaderHeight);
-    CGRect tokenFrame = CGRectMake(0, kKayokoSearchHeaderHeight, width, tokenHeight);
+    CGRect infoStripFrame = CGRectMake(0, stripOffsetY, width, infoStripHeight);
+    CGRect tokenFrame = CGRectMake(0, tokenOffsetY, width, tokenHeight);
 
     BOOL needsTableHeaderUpdate = !CGRectEqualToRect([headerView frame], headerFrame);
     [headerView setFrame:headerFrame];
     [searchBar setFrame:searchBarFrame];
+    [infoStripView setFrame:infoStripFrame];
     [tokenView setFrame:tokenFrame];
     if (needsTableHeaderUpdate) {
         [tableView setTableHeaderView:headerView];
     }
+
+    // The header is a tableHeaderView, so it lives inside the scrolling content
+    // and the fade mask would dim it as soon as the list scrolls. Holding the
+    // fade envelope back by the header's height keeps the search bar, the strip
+    // and the tokens crisp, and the fade then only affects the rows themselves.
+    [tableView setEdgeFadeInsets:UIEdgeInsetsMake(headerHeight, 0, 0, 0)];
 
     // Re-installing a tableHeaderView can make UIKit restore the previous
     // content offset. In pinned-search mode the header is a hard invariant for
@@ -197,6 +232,19 @@ NS_ASSUME_NONNULL_END
 
 - (UIView *)searchHeaderViewForTableView:(KayokoHistoryListView *)tableView {
     return tableView == [self favoritesTableView] ? [self favoritesSearchHeaderView] : [self historySearchHeaderView];
+}
+
+- (KayokoSearchInfoStripView *)infoStripViewForTableView:(KayokoHistoryListView *)tableView {
+    return tableView == [self favoritesTableView] ? [self favoritesSearchInfoStripView]
+                                                 : [self historySearchInfoStripView];
+}
+
+- (void)setInfoStripView:(KayokoSearchInfoStripView *)infoStripView forTableView:(KayokoHistoryListView *)tableView {
+    if (tableView == [self favoritesTableView]) {
+        [self setFavoritesSearchInfoStripView:infoStripView];
+    } else {
+        [self setHistorySearchInfoStripView:infoStripView];
+    }
 }
 
 - (void)setSearchHeaderView:(UIView *)headerView forTableView:(KayokoHistoryListView *)tableView {
@@ -230,6 +278,32 @@ NS_ASSUME_NONNULL_END
         [searchBar removeFromSuperview];
         [headerView addSubview:searchBar];
     }
+
+    // The strip owns its own shadow of the three switches: it must be added to
+    // the header at zero height when they are all off, and grow in place when
+    // one is turned on, without ever touching the search bar above it.
+    KayokoSearchInfoStripView *infoStripView = [self infoStripViewForTableView:tableView];
+    CGFloat infoStripHeight = [KayokoSearchInfoStripView
+        heightForShowsApplication:[self showsApplicationInSearchInfoStrip]
+                    showsCategory:[self showsCategoryInSearchInfoStrip]
+                        showsNote:[self showsNoteInSearchInfoStrip]];
+    if (infoStripHeight > 0 && !infoStripView) {
+        infoStripView = [[KayokoSearchInfoStripView alloc] initWithFrame:CGRectZero];
+        [self setInfoStripView:infoStripView forTableView:tableView];
+    }
+    if (infoStripView) {
+        [infoStripView setMetadataProvider:[self metadataProvider]];
+        if ([infoStripView superview] != headerView) {
+            [infoStripView removeFromSuperview];
+            [headerView addSubview:infoStripView];
+        }
+        [infoStripView setHidden:infoStripHeight <= 0];
+    }
+    if (infoStripHeight <= 0 && infoStripView) {
+        [self setInfoStripView:nil forTableView:tableView];
+        [infoStripView removeFromSuperview];
+    }
+
     if (tokenView && [tokenView superview] != headerView) {
         [tokenView removeFromSuperview];
         [headerView addSubview:tokenView];
@@ -238,6 +312,59 @@ NS_ASSUME_NONNULL_END
         [tableView setTableHeaderView:headerView];
     }
     [self layoutSearchBarForTableView:tableView];
+}
+
+#pragma mark - Search Info Strip
+
+- (void)setShowsApplicationInSearchInfoStrip:(BOOL)showsApplication
+                                  showsCategory:(BOOL)showsCategory
+                                      showsNote:(BOOL)showsNote {
+    if (_showsApplicationInSearchInfoStrip == showsApplication && _showsCategoryInSearchInfoStrip == showsCategory &&
+        _showsNoteInSearchInfoStrip == showsNote) {
+        return;
+    }
+
+    _showsApplicationInSearchInfoStrip = showsApplication;
+    _showsCategoryInSearchInfoStrip = showsCategory;
+    _showsNoteInSearchInfoStrip = showsNote;
+
+    // Re-installing both headers is what re-evaluates the strip height, which in
+    // turn moves the token list down or back up.
+    [self installSearchBarForTableView:[self historyTableView]];
+    [self installSearchBarForTableView:[self favoritesTableView]];
+    [self updateSearchInfoStripContent];
+}
+
+- (void)updateSearchInfoStripContent {
+    // History and Favorites keep independent selections, so each header's strip
+    // is fed the item that belongs to its own list. A single shared item would
+    // make the inactive list describe the active list's row.
+    for (KayokoHistoryListView *tableView in @[ [self historyTableView], [self favoritesTableView] ]) {
+        KayokoSearchInfoStripView *infoStripView = [self infoStripViewForTableView:tableView];
+        if (!infoStripView) {
+            continue;
+        }
+
+        [infoStripView updateWithItem:[self searchInfoStripItemForTableView:tableView]
+                     showsApplication:[self showsApplicationInSearchInfoStrip]
+                        showsCategory:[self showsCategoryInSearchInfoStrip]
+                            showsNote:[self showsNoteInSearchInfoStrip]];
+    }
+}
+
+- (nullable KayokoPasteboardItem *)searchInfoStripItemForTableView:(KayokoHistoryListView *)tableView {
+    return tableView == [self favoritesTableView] ? [self favoritesSearchInfoStripItem]
+                                                 : [self historySearchInfoStripItem];
+}
+
+- (void)setSearchInfoStripItem:(KayokoPasteboardItem *)searchInfoStripItem
+                 forTableView:(KayokoHistoryListView *)tableView {
+    if (tableView == [self favoritesTableView]) {
+        _favoritesSearchInfoStripItem = searchInfoStripItem;
+    } else {
+        _historySearchInfoStripItem = searchInfoStripItem;
+    }
+    [self updateSearchInfoStripContent];
 }
 
 #pragma mark - Search Bar Visibility
