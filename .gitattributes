@@ -1,0 +1,29 @@
+# Normalize all text files to LF in the repository.
+# Build tooling (Theos / make / bash on macOS and Linux) breaks on CRLF line
+# endings: a sourced shell script with CRLF makes bash try to execute "\r"
+# as a command, which fails with exit code 127.
+* text=auto eol=lf
+
+# Explicitly keep build-critical files LF.
+*.sh        text eol=lf
+*.rb        text eol=lf
+*.mk        text eol=lf
+Makefile    text eol=lf
+control     text eol=lf
+*.yml       text eol=lf
+*.yaml      text eol=lf
+*.plist     text eol=lf
+*.strings   text eol=lf
+
+# Binary assets must never be converted.
+*.png       binary
+*.jpg       binary
+*.jpeg      binary
+*.gif       binary
+*.ico       binary
+*.pdf       binary
+*.zip       binary
+*.deb       binary
+*.dylib     binary
+*.a         binary
+*.o         binary
