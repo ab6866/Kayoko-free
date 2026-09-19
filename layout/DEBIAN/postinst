@@ -1,16 +1,28 @@
-#!/bin/bash
+#!/bin/sh
+# Use /bin/sh: not every jailbreak root ships /bin/bash, and a missing
+# interpreter makes dpkg fail with:
+#   unable to execute ... post-installation script: No such file or directory
 
 UPDATER="/usr/local/libexec/kayoko_updater"
 if command -v jbroot >/dev/null 2>&1; then
     UPDATER="$(jbroot "$UPDATER")"
 fi
 
-if [ ! -x "$UPDATER" ] && [ -x "/var/jb/usr/local/libexec/kayoko_updater" ]; then
-    UPDATER="/var/jb/usr/local/libexec/kayoko_updater"
-fi
+for CANDIDATE in \
+    "$UPDATER" \
+    "/var/jb/usr/local/libexec/kayoko_updater" \
+    "/Library/dpkg/usr/local/libexec/kayoko_updater"
+do
+    if [ -x "$CANDIDATE" ]; then
+        UPDATER="$CANDIDATE"
+        break
+    fi
+done
 
 if [ -x "$UPDATER" ]; then
     "$UPDATER" postinst || true
 fi
 
 killall -9 druid pasted || true
+
+exit 0

@@ -15,6 +15,12 @@ control     text eol=lf
 *.plist     text eol=lf
 *.strings   text eol=lf
 
+# dpkg maintainer scripts have no file extension. They MUST be LF: a CRLF
+# shebang installs as "#!/bin/sh\r", so dpkg reports
+#   unable to execute ... post-installation script: No such file or directory
+layout/DEBIAN/*   text eol=lf
+*/DEBIAN/*        text eol=lf
+
 # Binary assets must never be converted.
 *.png       binary
 *.jpg       binary

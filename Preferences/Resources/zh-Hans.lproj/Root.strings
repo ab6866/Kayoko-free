@@ -34,7 +34,7 @@
 "Images Only" = "仅图片";
 "Input Switcher" = "输入法菜单";
 "Item Details" = "条目详情";
-"Item details show when an item was last captured, along with its text length or image dimensions and file size." = "显示最近捕获时间，并附带文本字数，或图片尺寸和文件大小。开启“显示应用图标与时间”后，捕获时间会改为显示在条目名称旁。";
+"Item details show when an item was last captured, along with its text length or image dimensions and file size." = "显示最近捕获时间，并附带文本字数，或图片尺寸和文件大小。";
 "Kayoko" = "Kayoko";
 "Kayoko entered maintenance mode before the import failed. Restart SpringBoard now to continue using Kayoko." = "导入失败前 Kayoko 已进入维护模式。你需要立即重启 SpringBoard，才能继续使用 Kayoko。";
 "Made with ♥ by OwnGoal Studio" = "「乌龙工作室」倾情献制";
@@ -54,7 +54,7 @@
 "Restart Required" = "需要立即重启";
 "Save Images" = "保存图像";
 "Save Text" = "保存文本";
-"Show App Icon and Time" = "显示应用图标与时间";
+"Show Time" = "显示时间";
 "Show Kayoko" = "显示 Kayoko";
 "Single Line" = "单行";
 "Swipe to Select Words" = "滑动选词";

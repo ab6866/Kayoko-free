@@ -150,6 +150,20 @@
 		</dict>
 		<dict>
 			<key>cell</key>
+			<string>PSSwitchCell</string>
+			<key>default</key>
+			<false/>
+			<key>defaults</key>
+			<string>com.82flex.kayoko.preferences</string>
+			<key>key</key>
+			<string>ShowIconAndTime</string>
+			<key>label</key>
+			<string>Show Time</string>
+			<key>PostNotification</key>
+			<string>com.82flex.kayoko.preferences.reload</string>
+		</dict>
+		<dict>
+			<key>cell</key>
 			<string>PSLinkCell</string>
 			<key>detail</key>
 			<string>KayokoTagManagementViewController</string>
@@ -229,7 +243,7 @@
 			<key>cell</key>
 			<string>PSGroupCell</string>
 			<key>footerText</key>
-			<string>Item details show when an item was last captured, along with its text length or image dimensions and file size. When “Show App Icon and Time” is on, the capture time moves next to the item name instead.</string>
+			<string>Item details show when an item was last captured, along with its text length or image dimensions and file size.</string>
 			<key>label</key>
 			<string>Item Details</string>
 		</dict>
@@ -254,20 +268,6 @@
 				<string>Images Only</string>
 				<string>All</string>
 			</array>
-			<key>PostNotification</key>
-			<string>com.82flex.kayoko.preferences.reload</string>
-		</dict>
-		<dict>
-			<key>cell</key>
-			<string>PSSwitchCell</string>
-			<key>default</key>
-			<false/>
-			<key>defaults</key>
-			<string>com.82flex.kayoko.preferences</string>
-			<key>key</key>
-			<string>ShowIconAndTime</string>
-			<key>label</key>
-			<string>Show App Icon and Time</string>
 			<key>PostNotification</key>
 			<string>com.82flex.kayoko.preferences.reload</string>
 		</dict>

@@ -1,4 +1,4 @@
-# Kayoko 4.3.2+free2
+# Kayoko 4.3.2+free3
 
 Feature-rich clipboard manager for iOS — **free build**.
 
@@ -16,13 +16,13 @@ support footer at the bottom of the root list.
   `KayokoLinkCell` entry.
 - `Preferences/Resources/{en,zh-Hans}.lproj/Root.strings` — removed the matching strings.
 
-### 2. New switch: **Show App Icon and Time**
+### 2. New switch: **Show Time**
 
-Added directly under the **Item Details** group.
+Placed in the **History** group, directly below **Save Images**.
 
-When enabled, the capture time moves out of the detail line and is rendered
-right-aligned on the same row as the item name, next to the app icon — a compact
-two-line layout. The detail line then keeps only the size/length information.
+When enabled, the capture **date and time** (`MM-dd` / `HH:mm`, two lines) is drawn
+underneath the app icon. The relative time is then dropped from the detail line so it
+is not shown twice.
 
 Default: **off** — existing behaviour is unchanged until you turn it on.
 
@@ -31,14 +31,34 @@ Data flow:
 | Layer | File | Change |
 |---|---|---|
 | Key | `Preferences/KayokoPreferenceKeys.h` | `ShowIconAndTime` + default `NO` |
-| UI | `Preferences/Resources/Root.plist` | `PSSwitchCell` after Item Details |
+| UI | `Preferences/Resources/Root.plist` | `PSSwitchCell` after Save Images |
 | Runtime | `Tweak/Core/KayokoCoreRuntime.m` | default registration, read, push to view |
 | Panel | `Tweak/Core/Controllers/KayokoMainViewController.{h,m}` | property + setter forwarding |
 | List | `Tweak/Core/Controllers/KayokoHistoryListViewController.{h,m}` | forwarding |
-| Table | `Tweak/Core/Views/KayokoHistoryListView.{h,m}` | property + reload |
-| Content | `Tweak/Core/Models/KayokoTableViewCellContentProvider.{h,m}` | build the header timestamp |
-| Cell | `Tweak/Core/Views/KayokoTableViewCell.{h,m}` | `timestampLabel`, layout, reuse id |
-| L10n | `Preferences/Resources/{en,zh-Hans}.lproj/Root.strings` | new label text |
+| Table | `Tweak/Core/Views/KayokoHistoryListView.{h,m}` | property, reload, extra row height |
+| Content | `Tweak/Core/Models/KayokoTableViewCellContentProvider.{h,m}` | build the date+time string |
+| Cell | `Tweak/Core/Views/KayokoTableViewCell.{h,m}` | `timestampLabel` under the icon, reuse id |
+| L10n | `Preferences/Resources/{en,zh-Hans}.lproj/Root.strings` | `Show Time` / `显示时间` |
+
+### 3. Fixed: dpkg could not run the post-install script
+
+Installing produced:
+
+```
+dpkg: unable to execute installed com.82flex.kayoko package post-installation script
+(/Library/dpkg/info/com.82flex.kayoko.postinst): No such file or directory
+```
+
+Two causes, both fixed:
+
+1. `layout/DEBIAN/postinst` and `postrm` were checked in with **CRLF** line endings.
+   The shebang therefore installed as `#!/bin/sh\r`, and dpkg looked for an
+   interpreter named `/bin/sh\r` that does not exist.
+2. The shebang was `#!/bin/bash`, which is not guaranteed to exist inside every
+   jailbreak root. Both scripts now use `#!/bin/sh` and `postinst` probes a few
+   candidate updater paths before running it.
+
+`.gitattributes` now also pins `layout/DEBIAN/*` to `eol=lf` so this cannot regress.
 
 ### 3. Authorization remnants cleaned up
 

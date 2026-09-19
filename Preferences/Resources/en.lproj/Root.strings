@@ -34,7 +34,7 @@
 "Images Only" = "Images Only";
 "Input Switcher" = "Input Switcher";
 "Item Details" = "Item Details";
-"Item details show when an item was last captured, along with its text length or image dimensions and file size. When “Show App Icon and Time” is on, the capture time moves next to the item name instead." = "Item details show when an item was last captured, along with its text length or image dimensions and file size. When “Show App Icon and Time” is on, the capture time moves next to the item name instead.";
+"Item details show when an item was last captured, along with its text length or image dimensions and file size." = "Item details show when an item was last captured, along with its text length or image dimensions and file size.";
 "Kayoko" = "Kayoko";
 "Kayoko entered maintenance mode before the import failed. Restart SpringBoard now to continue using Kayoko." = "Kayoko entered maintenance mode before the import failed. Restart SpringBoard now to continue using Kayoko.";
 "Made with ♥ by OwnGoal Studio" = "Made with ♥ by OwnGoal Studio";
@@ -54,7 +54,7 @@
 "Restart Required" = "Restart Required";
 "Save Images" = "Save Images";
 "Save Text" = "Save Text";
-"Show App Icon and Time" = "Show App Icon and Time";
+"Show Time" = "Show Time";
 "Show Kayoko" = "Show Kayoko";
 "Single Line" = "Single Line";
 "Swipe to Select Words" = "Swipe to Select Words";

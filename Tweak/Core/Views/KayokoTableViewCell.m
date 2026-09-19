@@ -14,6 +14,9 @@ static CGFloat const kKayokoTableViewCellContentImageWidth = 70;
 static CGFloat const kKayokoTableViewCellContentImageSingleLineHeight = 40;
 static CGFloat const kKayokoTableViewCellContentImageAdditionalLineHeight = 15;
 static NSUInteger const kKayokoTableViewCellMaximumPreviewLineCount = 3;
+// The timestamp sits under the 40pt icon, so it may exceed the icon width a
+// little without overlapping the title (they are vertically separated).
+static CGFloat const kKayokoTableViewCellTimestampMaximumWidth = 64;
 
 @interface KayokoTableViewCellPreviewLabel : UILabel
 @end
@@ -140,26 +143,29 @@ static NSUInteger const kKayokoTableViewCellMaximumPreviewLineCount = 3;
             [self contentImageView] ? [[self contentImageView] leadingAnchor] : [self trailingAnchor];
         CGFloat textTrailingConstant = [self contentImageView] ? -16 : -24;
 
-        // Header right-side timestamp: shown when the "Show App Icon and Time" preference is enabled.
+        // Timestamp lives directly under the app icon (left column), so the
+        // title row stays clean and the full date+time is visible.
         if (hasTimestamp) {
             [self setTimestampLabel:[[UILabel alloc] init]];
-            [[self timestampLabel] setFont:[UIFont systemFontOfSize:12 weight:UIFontWeightRegular]];
+            [[self timestampLabel] setFont:[UIFont systemFontOfSize:9 weight:UIFontWeightRegular]];
             [[self timestampLabel] setTextColor:[UIColor secondaryLabelColor]];
-            [[self timestampLabel] setTextAlignment:NSTextAlignmentRight];
-            [[self timestampLabel] setLineBreakMode:NSLineBreakByTruncatingHead];
+            [[self timestampLabel] setTextAlignment:NSTextAlignmentCenter];
+            [[self timestampLabel] setNumberOfLines:0];
+            [[self timestampLabel] setLineBreakMode:NSLineBreakByClipping];
+            [self addSubview:[self timestampLabel]];
+            [[self timestampLabel] setTranslatesAutoresizingMaskIntoConstraints:NO];
+            // Centre on the icon; let it hug its natural width (about 28pt for
+            // "09-19 / 19:26" at 9pt) and never grow into the title column.
             [[self timestampLabel] setContentHuggingPriority:UILayoutPriorityRequired
                                                      forAxis:UILayoutConstraintAxisHorizontal];
             [[self timestampLabel] setContentCompressionResistancePriority:UILayoutPriorityRequired
                                                                    forAxis:UILayoutConstraintAxisHorizontal];
-            [self addSubview:[self timestampLabel]];
-            [[self timestampLabel] setTranslatesAutoresizingMaskIntoConstraints:NO];
             [NSLayoutConstraint activateConstraints:@[
-                [[[self timestampLabel] trailingAnchor] constraintEqualToAnchor:textTrailingAnchor
-                                                                       constant:textTrailingConstant],
-                [[[self timestampLabel] centerYAnchor] constraintEqualToAnchor:[[self headerLabel] centerYAnchor]],
-                [[[self timestampLabel] leadingAnchor] constraintGreaterThanOrEqualToAnchor:[[self headerLabel]
-                                                                                              trailingAnchor]
-                                                                                  constant:8]
+                [[[self timestampLabel] topAnchor] constraintEqualToAnchor:[[self iconImageView] bottomAnchor]
+                                                                   constant:3],
+                [[[self timestampLabel] centerXAnchor] constraintEqualToAnchor:[[self iconImageView] centerXAnchor]],
+                [[[self timestampLabel] widthAnchor]
+                    constraintLessThanOrEqualToConstant:kKayokoTableViewCellTimestampMaximumWidth]
             ]];
         }
 
@@ -174,12 +180,10 @@ static NSUInteger const kKayokoTableViewCellMaximumPreviewLineCount = 3;
                 [[[self tagDotView] widthAnchor] constraintEqualToConstant:kKayokoTableViewCellTagDotSize],
                 [[[self tagDotView] heightAnchor] constraintEqualToConstant:kKayokoTableViewCellTagDotSize],
                 [[[self tagDotView] centerYAnchor] constraintEqualToAnchor:[[self headerLabel] centerYAnchor]],
-                [[[self tagDotView] trailingAnchor]
-                    constraintLessThanOrEqualToAnchor:hasTimestamp ? [[self timestampLabel] leadingAnchor]
-                                                                  : textTrailingAnchor
-                                               constant:hasTimestamp ? -6 : textTrailingConstant]
+                [[[self tagDotView] trailingAnchor] constraintLessThanOrEqualToAnchor:textTrailingAnchor
+                                                                            constant:textTrailingConstant]
             ]];
-        } else if (!hasTimestamp) {
+        } else {
             [NSLayoutConstraint activateConstraints:@[ [[[self headerLabel] trailingAnchor]
                                                         constraintEqualToAnchor:textTrailingAnchor
                                                                        constant:textTrailingConstant] ]];
@@ -243,6 +247,15 @@ static NSUInteger const kKayokoTableViewCellMaximumPreviewLineCount = 3;
         } else {
             [NSLayoutConstraint activateConstraints:@[ [[[self headerLabel] centerYAnchor]
                                                         constraintEqualToAnchor:[self centerYAnchor]] ]];
+        }
+
+        // Keep the icon+timestamp column from being clipped: the timestamp
+        // hangs below the icon, so the cell must be at least tall enough for
+        // icon height + spacing + timestamp height.
+        if (hasTimestamp) {
+            [[[self timestampLabel] bottomAnchor] constraintLessThanOrEqualToAnchor:[self bottomAnchor]
+                                                                          constant:-6]
+                .active = YES;
         }
 
         [self applyContent:content];

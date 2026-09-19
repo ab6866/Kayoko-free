@@ -40,8 +40,12 @@ NS_ASSUME_NONNULL_END
         _byteCountFormatter = [[NSByteCountFormatter alloc] init];
         [_byteCountFormatter setCountStyle:NSByteCountFormatterCountStyleFile];
         _compactTimestampFormatter = [[NSDateFormatter alloc] init];
+        // Shown under the app icon, so keep it compact: date on one line,
+        // time on the next (e.g. "09-19" / "19:26"). Date+time both matter
+        // here because history spans multiple days.
         [_compactTimestampFormatter setDateStyle:NSDateFormatterNoStyle];
-        [_compactTimestampFormatter setTimeStyle:NSDateFormatterShortStyle];
+        [_compactTimestampFormatter setTimeStyle:NSDateFormatterNoStyle];
+        [_compactTimestampFormatter setDateFormat:@"MM-dd\nHH:mm"];
         if ([localizationIdentifier length] > 0) {
             [_compactTimestampFormatter setLocale:[[NSLocale alloc] initWithLocaleIdentifier:localizationIdentifier]];
         }
@@ -152,8 +156,8 @@ NS_ASSUME_NONNULL_END
                                                                                   searchText:searchText]
                                                                : nil];
 
-    // When "Show App Icon and Time" is on, the capture time moves up to the header row and is rendered
-    // right-aligned next to the name, matching the compact two-line reference layout.
+    // When "Show Time" is on, the capture date+time is rendered under the app
+    // icon, and the relative time is dropped from the detail line below.
     NSString *headerTimestampText = nil;
     if (showIconAndTime && [item capturedAt]) {
         headerTimestampText = [self compactTimestampTextForDate:[item capturedAt]];

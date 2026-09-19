@@ -12,6 +12,8 @@
 static CGFloat const kKayokoHistoryListViewBaseRowHeight = 65;
 static CGFloat const kKayokoHistoryListViewAdditionalPreviewLineHeight = 18;
 static CGFloat const kKayokoHistoryListViewDetailLineHeight = 15;
+// Extra row height when the date+time is rendered under the app icon.
+static CGFloat const kKayokoHistoryListViewTimestampExtraHeight = 12;
 static NSUInteger const kKayokoHistoryListViewMaximumPreviewLineCount = 3;
 static CGFloat const kKayokoHistoryListViewHiddenHeaderInsetPadding = 1;
 static CGFloat const kKayokoHistoryListViewVerticalFadeHeight = 20;
@@ -413,9 +415,13 @@ NS_ASSUME_NONNULL_END
 - (void)updateRowHeightForCurrentDisplayOptions {
     CGFloat detailHeight =
         [self itemDetailsMode] == kKayokoItemDetailsModeAll ? kKayokoHistoryListViewDetailLineHeight : 0;
+    // When the timestamp is shown under the app icon, the left column becomes
+    // taller than the base row (icon 40pt + gap + two lines of 9pt text), so
+    // give the row some extra breathing room to avoid clipping it.
+    CGFloat timestampHeight = [self showIconAndTime] ? kKayokoHistoryListViewTimestampExtraHeight : 0;
     [self setRowHeight:kKayokoHistoryListViewBaseRowHeight +
                        ([self previewLineCount] - 1) * kKayokoHistoryListViewAdditionalPreviewLineHeight +
-                       detailHeight];
+                       detailHeight + timestampHeight];
 }
 
 @end
