@@ -244,10 +244,19 @@ static CGFloat const kKayokoTableViewCellTimestampIconGap = 3;
             ]];
         }
 
+        // Fallback vertical placement. These are deliberately BELOW required
+        // priority: they are only a starting point so Auto Layout has a
+        // deterministic layout before the centring guides below are added, and
+        // they must yield to those guides. Leaving them at required priority
+        // would make the header top pin (e.g. constant 13) fight the guide's
+        // centring constraint whenever the text block is taller than the row is
+        // assumed to be -- an unsatisfiable pair that logs a warning and can
+        // render inconsistently. The >= / <= bounds stay required so content can
+        // never be pushed outside the cell.
+        NSArray<NSLayoutConstraint *> *fallbackConstraints = nil;
         if (hasContentText) {
-            [NSLayoutConstraint activateConstraints:@[ [[[self headerLabel] topAnchor]
-                                                        constraintEqualToAnchor:[self topAnchor]
-                                                                       constant:showsDetail ? 13 : 12] ]];
+            fallbackConstraints = @[ [[[self headerLabel] topAnchor] constraintEqualToAnchor:[self topAnchor]
+                                                                                    constant:showsDetail ? 13 : 12] ];
             if (showsDetail) {
                 [NSLayoutConstraint activateConstraints:@[
                     [[[self detailLabel] topAnchor] constraintEqualToAnchor:[[self contentLabel] bottomAnchor]
@@ -262,14 +271,18 @@ static CGFloat const kKayokoTableViewCellTimestampIconGap = 3;
             }
         } else if (showsDetail) {
             [NSLayoutConstraint activateConstraints:@[
-                [[[self headerLabel] topAnchor] constraintGreaterThanOrEqualToAnchor:[self topAnchor] constant:8],
                 [[[self detailLabel] topAnchor] constraintEqualToAnchor:[[self headerLabel] bottomAnchor] constant:1],
                 [[[self detailLabel] bottomAnchor] constraintLessThanOrEqualToAnchor:[self bottomAnchor] constant:-8]
             ]];
+            fallbackConstraints = @[ [[[self headerLabel] topAnchor] constraintGreaterThanOrEqualToAnchor:[self topAnchor]
+                                                                                                 constant:8] ];
         } else {
-            [NSLayoutConstraint activateConstraints:@[ [[[self headerLabel] centerYAnchor]
-                                                        constraintEqualToAnchor:[self centerYAnchor]] ]];
+            fallbackConstraints = @[ [[[self headerLabel] centerYAnchor] constraintEqualToAnchor:[self centerYAnchor]] ];
         }
+        for (NSLayoutConstraint *constraint in fallbackConstraints) {
+            [constraint setPriority:UILayoutPriorityDefaultHigh];
+        }
+        [NSLayoutConstraint activateConstraints:fallbackConstraints];
 
         // Vertical alignment.
         //
@@ -285,11 +298,6 @@ static CGFloat const kKayokoTableViewCellTimestampIconGap = 3;
         // right column (title/preview/detail) as two blocks and centre each of
         // them vertically. This adapts to every combination of the timestamp
         // switch, preview line count and item-details mode.
-        //
-        // Constraints are applied *after* the content block above because the
-        // block still pins headerLabel's top; those top pins are low-priority so
-        // this centre constraint wins, and keeping them gives Auto Layout a
-        // deterministic resolve order without ever failing.
         if (hasTimestamp) {
             // Left column: icon top -> timestamp bottom, centred as a unit.
             [[[self iconImageView] topAnchor] constraintGreaterThanOrEqualToAnchor:[self topAnchor]
